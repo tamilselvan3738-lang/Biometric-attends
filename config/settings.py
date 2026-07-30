@@ -8,8 +8,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 SECRET_KEY = 'django-insecure-biometric-attendance-system-key-change-this'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+DEBUG = False
+ALLOWED_HOSTS = ["biometric-attends.onrender.com"]
 
 # Application definition
 
