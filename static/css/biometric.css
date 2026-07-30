@@ -1,0 +1,49 @@
+.enrollment-guide {
+    background: rgba(31, 41, 55, 0.4);
+    border: 1px dashed var(--glass-border);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+}
+
+.enrollment-step {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.step-number {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.enrollment-step.active .step-number {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 0 8px var(--primary-glow);
+}
+
+.enrollment-step.completed .step-number {
+    background: var(--success);
+    color: #fff;
+}
+
+/* Face box layout */
+.face-box-overlay {
+    position: absolute;
+    border: 2px solid var(--secondary);
+    border-radius: 8px;
+    box-shadow: 0 0 10px var(--secondary-glow);
+    transition: all 0.1s ease-out;
+    pointer-events: none;
+    display: none;
+}

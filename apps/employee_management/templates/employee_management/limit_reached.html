@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Limit Reached | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2 class="fw-bold text-light">Registration Limit Reached</h2>
+        <p class="text-secondary">Your account has reached its maximum employee slot count limit.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <div class="glass-card p-5 text-center">
+            <div class="mb-4">
+                <i class="fas fa-exclamation-circle text-warning" style="font-size: 4rem;"></i>
+            </div>
+            
+            <h4 class="text-light fw-bold mb-3">Employee Limit Reached</h4>
+            <p class="text-secondary mb-4">
+                You have created <strong class="text-primary">{{ created_count }}</strong> out of <strong class="text-primary">{{ max_employees }}</strong> allowed employee accounts. 
+                To register extra employee profiles, you must request an employee limit increase from the Super Admin.
+            </p>
+            
+            {% if pending_request %}
+                <div class="alert alert-info py-3 border-0 bg-opacity-25 bg-info text-info rounded" style="border: 1px solid rgba(13, 202, 240, 0.2) !important;">
+                    <i class="fas fa-clock me-2"></i>You currently have a **Pending Slot Request** awaiting review by the Super Admin.
+                </div>
+                <a href="{% url 'employee_management:employee_list' %}" class="btn btn-outline-secondary mt-3">
+                    Go Back to Records
+                </a>
+            {% else %}
+                <hr class="border-secondary my-4">
+                
+                <h5 class="text-light fw-bold mb-3 text-start"><i class="fas fa-paper-plane me-2 text-primary"></i>Request Extra Slots</h5>
+                <form method="POST" action="{% url 'super_admin:request_limit_increase' %}" class="text-start">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-semibold">Requested Total Slots Limit</label>
+                        <input type="number" name="requested_limit" class="form-control bg-dark text-light border-secondary" min="{{ max_employees|add:1 }}" value="{{ max_employees|add:5 }}" required>
+                        <div class="form-text text-muted small">Enter the total number of employee slots you need (must be greater than {{ max_employees }}).</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-semibold">Reason for Request</label>
+                        <textarea name="reason" class="form-control bg-dark text-light border-secondary" rows="3" placeholder="e.g. Hiring 5 new engineers for the engineering department..." required></textarea>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-glow-primary">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Slot Request
+                        </button>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

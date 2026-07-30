@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Edit Attendance Log | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <a href="{% url 'attendance:attendance_logs' %}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="fas fa-arrow-left me-1"></i>Back to Logs
+        </a>
+        <h2 class="fw-bold text-light">Modify Attendance Record</h2>
+        <p class="text-secondary">Manually edit employee check-in and check-out timestamps.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <div class="glass-card p-4">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-calendar-check me-2 text-primary"></i>Record: {{ record.user.get_full_name|default:record.user.display_username }}
+            </h5>
+            
+            <div class="mb-4 text-secondary small">
+                <span class="d-block mb-1">Date: <strong>{{ record.date|date:"F d, Y" }}</strong></span>
+                <span class="d-block">Employee ID: <strong>{{ record.user.employeeprofile.display_employee_id }}</strong></span>
+            </div>
+            
+            <form method="POST">
+                {% csrf_token %}
+                {{ form|crispy }}
+                
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-glow-primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <a href="{% url 'attendance:attendance_logs' %}" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

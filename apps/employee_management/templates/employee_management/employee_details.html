@@ -1,0 +1,892 @@
+{% extends 'base.html' %}
+{% block title %}Employee Details | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <a href="{% url 'employee_management:employee_list' %}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="fas fa-arrow-left me-1"></i>Back to Directory
+        </a>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+            <h2 class="fw-bold text-light">Employee Dashboard</h2>
+            {% if request.user.role == 'ADMIN' %}
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'employee_management:edit_employee' profile.pk %}" class="btn btn-glow-secondary">
+                        <i class="fas fa-edit me-2"></i>Modify Profile
+                    </a>
+                    {% if profile.status == 'ACTIVE' %}
+                        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#deactivateModal">
+                            <i class="fas fa-user-slash me-2"></i>Deactivate Account
+                        </button>
+                    {% else %}
+                        <form method="POST" action="{% url 'employee_management:activate_employee' profile.pk %}" style="display: inline-block;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-glow-success">
+                                <i class="fas fa-user-check me-2"></i>Reactivate Account
+                            </button>
+                        </form>
+                    {% endif %}
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="fas fa-trash-alt me-2"></i>Permanent Delete
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 animate-fade-in">
+    <!-- Left Column: Profile Summary & Monthly Stats -->
+    <div class="col-lg-4">
+        <!-- Profile details -->
+        <div class="glass-card p-3 p-sm-4 text-center mb-4">
+            <div class="mb-3 position-relative d-inline-block">
+                {% if profile.profile_image %}
+                    <img src="{{ profile.profile_image.url }}" alt="avatar" class="rounded-circle border border-primary p-1" style="width: 140px; height: 140px; object-fit: cover;">
+                {% elif profile.user.faceenrollment and profile.user.faceenrollment.enrolled_image %}
+                    <img src="{{ profile.user.faceenrollment.enrolled_image.url }}" alt="avatar" class="rounded-circle border border-primary p-1" style="width: 140px; height: 140px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 140px; height: 140px;">
+                        <i class="fas fa-user text-muted" style="font-size: 3rem;"></i>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <h4 class="fw-bold text-light mb-1">{{ profile.user.get_full_name|default:profile.user.display_username }}</h4>
+            <span class="badge bg-primary px-3 py-1.5 mb-3" style="font-size: 0.8rem; font-weight: 500; letter-spacing: 0.5px;">{{ profile.designation }}</span>
+            
+            <div class="border-top border-secondary pt-3 mt-2 text-start">
+                <div class="row g-2 text-light" style="font-size: 0.85rem;">
+                    <div class="col-12 col-sm-6">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Employee ID</span>
+                        <strong class="font-monospace text-primary" style="font-size: 0.95rem;">{{ profile.display_employee_id }}</strong>
+                    </div>
+                    <div class="col-12 col-sm-6 mt-2 mt-sm-0">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Department</span>
+                        <strong>{{ profile.department.name|default:"Unassigned" }}</strong>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Email Address</span>
+                        <strong style="word-break: break-all;">{{ profile.user.email|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Joined Date</span>
+                        <strong>{{ profile.date_of_joining|date:"F d, Y" }}</strong>
+                    </div>
+                    <div class="col-12 col-sm-6 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Gender</span>
+                        <strong>{{ profile.user.get_gender_display|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-12 col-sm-6 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Date of Birth</span>
+                        <strong>{{ profile.user.date_of_birth|date:"F d, Y"|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Current Address</span>
+                        <strong>{{ profile.user.current_address|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Permanent Address</span>
+                        <strong>{{ profile.user.permanent_address|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-12 col-sm-6 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">City</span>
+                        <strong>{{ profile.user.city|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-12 col-sm-6 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">State</span>
+                        <strong>{{ profile.user.state|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-12 col-sm-6 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Pincode</span>
+                        <strong>{{ profile.user.pincode|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-12 col-sm-6 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Country</span>
+                        <strong>{{ profile.user.country|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Nationality</span>
+                        <strong>{{ profile.user.nationality|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Assigned Shift</span>
+                        <strong>{{ profile.shift.name|default:"Unassigned" }} {% if profile.shift %}({{ profile.shift.start_time|time:"h:i A" }} - {{ profile.shift.end_time|time:"h:i A" }}){% endif %}</strong>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <span class="text-secondary d-block text-uppercase" style="font-size: 0.65rem;">Today Status</span>
+                        {% if profile.current_attendance_status == 'PRESENT' %}
+                            <span class="badge-status badge-present d-inline-block px-2 py-0.5 mt-1">Present</span>
+                        {% elif profile.current_attendance_status == 'LATE' %}
+                            <span class="badge-status d-inline-block px-2 py-0.5 mt-1" style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1.5px solid rgba(245, 158, 11, 0.3);">Late</span>
+                        {% elif profile.current_attendance_status == 'ON_LEAVE' %}
+                            <span class="badge-status d-inline-block px-2 py-0.5 mt-1" style="background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.3);">On Leave</span>
+                        {% elif profile.current_attendance_status == 'WEEKEND' %}
+                            <span class="badge-status d-inline-block px-2 py-0.5 mt-1" style="background-color: rgba(107, 114, 128, 0.15); color: #9ca3af; border: 1.5px solid rgba(107, 114, 128, 0.3);">Off Day</span>
+                        {% else %}
+                            <span class="badge-status badge-absent d-inline-block px-2 py-0.5 mt-1">Absent</span>
+                        {% endif %}
+                    </div>
+                    {% if profile.is_biometric_locked %}
+                    <div class="col-12 mt-3 pt-3 border-top border-secondary text-center">
+                        <div class="alert alert-danger mb-2 p-2 animate-pulse" style="font-size: 0.8rem; background-color: rgba(220, 38, 38, 0.15); border: 1px solid rgba(220, 38, 38, 0.3); color: #ef4444;">
+                            <i class="fas fa-lock me-1"></i> <strong>Biometrics Locked</strong>
+                            <div class="small mt-1 text-light">{{ profile.biometric_lock_reason }}</div>
+                        </div>
+                        {% if request.user.role == 'ADMIN' %}
+                        <form method="POST" action="{% url 'employee_management:unlock_biometrics' profile.pk %}" style="display: inline-block;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-success mt-1">
+                                <i class="fas fa-unlock me-1"></i>Unlock Biometrics
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly analytics stats card -->
+        <div class="glass-card p-3 p-sm-4">
+            <h5 class="fw-bold text-light mb-3 pb-2 border-bottom border-secondary">
+                <i class="fas fa-chart-line me-2 text-primary"></i>Monthly Analytics
+            </h5>
+            
+            <div class="row g-3 text-light" style="font-size: 0.9rem;">
+                <div class="col-6">
+                    <div class="p-2 rounded bg-dark border border-secondary text-center">
+                        <span class="text-secondary d-block uppercase small mb-1">Present Days</span>
+                        <strong class="text-success h4 mb-0" id="stat-present-days">0</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 rounded bg-dark border border-secondary text-center">
+                        <span class="text-secondary d-block uppercase small mb-1">Absent Days</span>
+                        <strong class="text-danger h4 mb-0" id="stat-absent-days">0</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 rounded bg-dark border border-secondary text-center">
+                        <span class="text-secondary d-block uppercase small mb-1">Leave Days</span>
+                        <strong class="text-info h4 mb-0" id="stat-leave-days">0</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 rounded bg-dark border border-secondary text-center">
+                        <span class="text-secondary d-block uppercase small mb-1">Late Arrivals</span>
+                        <strong class="text-warning h4 mb-0" id="stat-late-arrivals">0</strong>
+                    </div>
+                </div>
+                
+                <div class="col-12 mt-2">
+                    <div class="border-top border-secondary pt-2">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Attendance Rate</span>
+                            <span class="fw-bold text-primary" id="stat-attendance-pct">0.0%</span>
+                        </div>
+                        <div class="progress" style="height: 6px; background-color: #0b0f19;">
+                            <div id="stat-attendance-progress" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 mt-3 pt-2 border-top border-secondary">
+                    <div class="d-flex justify-content-between mb-1.5">
+                        <span class="text-secondary">Basic Earnings:</span>
+                        <strong class="text-light" id="stat-salary-earned">₹0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1.5">
+                        <span class="text-secondary">Overtime Bonus:</span>
+                        <strong class="text-success" id="stat-overtime-earnings">+₹0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1.5">
+                        <span class="text-secondary">Deductions:</span>
+                        <strong class="text-danger" id="stat-deductions">-₹0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between pt-2 border-top border-secondary mt-1.5">
+                        <span class="fw-bold text-light">Net Month Pay:</span>
+                        <strong class="text-primary h5 mb-0" id="stat-net-salary">₹0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between pt-2 border-top border-secondary mt-1.5">
+                        <span class="fw-bold text-info">OT Net Month Pay:</span>
+                        <strong class="text-info h5 mb-0" id="stat-ot-net-salary">₹0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between pt-2 border-top border-secondary mt-1.5" style="border-width: 2px !important;">
+                        <span class="fw-bold text-success">Grand Total:</span>
+                        <strong class="text-success h4 mb-0" id="stat-grand-total">₹0.00</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Calendar, Selected Date Details & Visual Charts -->
+    <div class="col-lg-8">
+        <!-- Interactive Calendar -->
+        <div class="glass-card p-2 p-sm-4 mb-4">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
+                <h5 class="fw-bold text-light mb-0">
+                    <i class="fas fa-calendar-alt me-2 text-primary"></i>Attendance Calendar
+                </h5>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary border-secondary px-2.5" id="prev-month-btn">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="fw-semibold text-light px-2" id="calendar-month-year" style="font-size: 0.95rem; min-width: 110px; text-align: center; display: inline-block; line-height: 28px;">July 2026</span>
+                    <button class="btn btn-sm btn-outline-secondary border-secondary px-2.5" id="next-month-btn">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="calendar-grid mb-1">
+                <!-- Header: weekdays -->
+                <div class="calendar-day-header text-secondary small text-center fw-bold py-2 text-warning" style="font-size: clamp(0.7rem, 2vw, 0.85rem);"><span class="d-none d-sm-inline">Sun</span><span class="d-inline d-sm-none">S</span></div>
+                <div class="calendar-day-header text-secondary small text-center fw-bold py-2" style="font-size: clamp(0.7rem, 2vw, 0.85rem);"><span class="d-none d-sm-inline">Mon</span><span class="d-inline d-sm-none">M</span></div>
+                <div class="calendar-day-header text-secondary small text-center fw-bold py-2" style="font-size: clamp(0.7rem, 2vw, 0.85rem);"><span class="d-none d-sm-inline">Tue</span><span class="d-inline d-sm-none">T</span></div>
+                <div class="calendar-day-header text-secondary small text-center fw-bold py-2" style="font-size: clamp(0.7rem, 2vw, 0.85rem);"><span class="d-none d-sm-inline">Wed</span><span class="d-inline d-sm-none">W</span></div>
+                <div class="calendar-day-header text-secondary small text-center fw-bold py-2" style="font-size: clamp(0.7rem, 2vw, 0.85rem);"><span class="d-none d-sm-inline">Thu</span><span class="d-inline d-sm-none">T</span></div>
+                <div class="calendar-day-header text-secondary small text-center fw-bold py-2" style="font-size: clamp(0.7rem, 2vw, 0.85rem);"><span class="d-none d-sm-inline">Fri</span><span class="d-inline d-sm-none">F</span></div>
+                <div class="calendar-day-header text-secondary small text-center fw-bold py-2 text-warning" style="font-size: clamp(0.7rem, 2vw, 0.85rem);"><span class="d-none d-sm-inline">Sat</span><span class="d-inline d-sm-none">S</span></div>
+            </div>
+            
+            <!-- Body cells grid -->
+            <div id="calendar-days" class="calendar-grid"></div>
+            
+            <!-- Legend Indicators -->
+            <div class="d-flex flex-wrap gap-3 mt-3 pt-2 border-top border-secondary justify-content-center text-light" style="font-size: 0.75rem;">
+                <div class="d-flex align-items-center gap-1.5">
+                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #22c55e;"></span>
+                    <span>Present</span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5">
+                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #f59e0b;"></span>
+                    <span>Late</span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5">
+                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #ef4444;"></span>
+                    <span>Absent</span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5">
+                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #3b82f6;"></span>
+                    <span>On Leave</span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5">
+                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #6b7280;"></span>
+                    <span>Off Day</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selected Date Details -->
+        <div class="glass-card p-3 p-sm-4 mb-4">
+            <h5 class="fw-bold text-light mb-3 pb-2 border-bottom border-secondary">
+                <i class="fas fa-info-circle me-2 text-primary"></i>Daily Breakdown: <span class="text-primary font-monospace" id="breakdown-date-title">--</span>
+            </h5>
+            
+            <div class="row g-3 text-light" style="font-size: 0.9rem;" id="breakdown-content">
+                <div class="col-md-6">
+                    <div class="p-3 rounded bg-dark border border-secondary h-100">
+                        <h6 class="text-secondary small fw-bold mb-2.5 text-uppercase">Time & Attendance</h6>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>Status:</span>
+                            <strong id="breakdown-status">--</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>Check-In:</span>
+                            <strong id="breakdown-checkin">--</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>Check-Out:</span>
+                            <strong id="breakdown-checkout">--</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>Worked Hours:</span>
+                            <strong id="breakdown-hours">0.0 hrs</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>Late Arrival:</span>
+                            <strong id="breakdown-lateness">0m</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>Early Exit:</span>
+                            <strong id="breakdown-early-exit">0m</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1.5 pt-1.5 border-top border-secondary mt-1.5">
+                            <span>OT Check-In:</span>
+                            <strong id="breakdown-ot-checkin">--</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>OT Check-Out:</span>
+                            <strong id="breakdown-ot-checkout">--</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>OT Amount:</span>
+                            <strong class="text-success" id="breakdown-ot-amount">₹0.00</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="p-3 rounded bg-dark border border-secondary h-100">
+                        <h6 class="text-secondary small fw-bold mb-2.5 text-uppercase">Daily Payroll Details</h6>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>Base Rate:</span>
+                            <strong id="breakdown-base-salary">₹0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>Earned Daily:</span>
+                            <strong id="breakdown-earned-salary">₹0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>Overtime Pay:</span>
+                            <strong class="text-success" id="breakdown-overtime-pay">+₹0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1.5">
+                            <span>Deduction:</span>
+                            <strong class="text-danger" id="breakdown-deduction">-₹0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2 border-top border-secondary mt-2">
+                            <span class="fw-bold">Final Day Pay:</span>
+                            <strong class="text-primary fw-bold" style="font-size: 1.1rem;" id="breakdown-net-pay">₹0.00</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Dashboard -->
+        <div class="glass-card p-3 p-sm-4 mb-4">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
+                <h5 class="fw-bold text-light mb-0">
+                    <i class="fas fa-chart-pie me-2 text-primary"></i>Visual Trends
+                </h5>
+                <ul class="nav nav-pills custom-pills flex-wrap gap-1" id="chart-tabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active py-1 px-2.5 small" data-bs-toggle="pill" data-bs-target="#tab-hours" type="button">Working Hours</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link py-1 px-2.5 small" data-bs-toggle="pill" data-bs-target="#tab-pay" type="button">Daily Pay</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link py-1 px-2.5 small" data-bs-toggle="pill" data-bs-target="#tab-distribution" type="button">Status Dist.</button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="tab-content" id="chart-tabs-content">
+                <div class="tab-pane fade show active" id="tab-hours" role="tabpanel">
+                    <div style="height: 240px; position: relative;">
+                        <canvas id="hoursChart"></canvas>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="tab-pay" role="tabpanel">
+                    <div style="height: 240px; position: relative;">
+                        <canvas id="payChart"></canvas>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="tab-distribution" role="tabpanel">
+                    <div style="height: 240px; position: relative;">
+                        <canvas id="distChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    background-color: transparent;
+}
+.calendar-day-header {
+    border-bottom: 1px solid var(--glass-border);
+}
+.calendar-day-cell {
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    aspect-ratio: 1.2;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 4px;
+}
+.calendar-day-cell:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+}
+.calendar-day-cell.active-day {
+    border: 1.5px solid var(--primary-color) !important;
+    background-color: rgba(99, 102, 241, 0.1) !important;
+}
+.calendar-day-cell.empty-cell {
+    opacity: 0.15;
+    cursor: default;
+    pointer-events: none;
+}
+.calendar-day-num {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #e2e8f0;
+}
+.calendar-day-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    align-self: center;
+    margin-bottom: 2px;
+}
+.custom-pills .nav-link {
+    background-color: transparent;
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-left: 4px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+.custom-pills .nav-link.active {
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
+    border-color: var(--primary-color);
+}
+</style>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const employeeId = "{{ profile.pk }}";
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth() + 1; // 1-indexed
+    
+    let monthData = {};
+    let activeDateStr = "";
+    
+    // Chart instances
+    let hoursChart = null;
+    let payChart = null;
+    let distChart = null;
+    
+    const monthsName = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    
+    // DOM Elements
+    const monthYearTitle = document.getElementById('calendar-month-year');
+    const calendarDaysGrid = document.getElementById('calendar-days');
+    const prevMonthBtn = document.getElementById('prev-month-btn');
+    const nextMonthBtn = document.getElementById('next-month-btn');
+    
+    // Stats Elements
+    const statPresent = document.getElementById('stat-present-days');
+    const statAbsent = document.getElementById('stat-absent-days');
+    const statLeave = document.getElementById('stat-leave-days');
+    const statLate = document.getElementById('stat-late-arrivals');
+    const statPct = document.getElementById('stat-attendance-pct');
+    const statProgress = document.getElementById('stat-attendance-progress');
+    const statSalary = document.getElementById('stat-salary-earned');
+    const statOvertime = document.getElementById('stat-overtime-earnings');
+    const statDeductions = document.getElementById('stat-deductions');
+    const statNet = document.getElementById('stat-net-salary');
+    const statOtNet = document.getElementById('stat-ot-net-salary');
+    const statGrandTotal = document.getElementById('stat-grand-total');
+    
+    // Breakdown Elements
+    const breakdownDateTitle = document.getElementById('breakdown-date-title');
+    const breakdownStatus = document.getElementById('breakdown-status');
+    const breakdownCheckin = document.getElementById('breakdown-checkin');
+    const breakdownCheckout = document.getElementById('breakdown-checkout');
+    const breakdownHours = document.getElementById('breakdown-hours');
+    const breakdownLateness = document.getElementById('breakdown-lateness');
+    const breakdownEarlyExit = document.getElementById('breakdown-early-exit');
+    const breakdownBaseSalary = document.getElementById('breakdown-base-salary');
+    const breakdownEarnedSalary = document.getElementById('breakdown-earned-salary');
+    const breakdownOvertimePay = document.getElementById('breakdown-overtime-pay');
+    const breakdownDeduction = document.getElementById('breakdown-deduction');
+    const breakdownNetPay = document.getElementById('breakdown-net-pay');
+    const breakdownOtCheckin = document.getElementById('breakdown-ot-checkin');
+    const breakdownOtCheckout = document.getElementById('breakdown-ot-checkout');
+    const breakdownOtAmount = document.getElementById('breakdown-ot-amount');
+    
+    // Initialize Dashboard
+    fetchMonthlyAttendance(currentYear, currentMonth);
+    
+    // Navigation handlers
+    prevMonthBtn.addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 1) {
+            currentMonth = 12;
+            currentYear--;
+        }
+        fetchMonthlyAttendance(currentYear, currentMonth);
+    });
+    
+    nextMonthBtn.addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 12) {
+            currentMonth = 1;
+            currentYear++;
+        }
+        fetchMonthlyAttendance(currentYear, currentMonth);
+    });
+    
+    // Fetch Data from Server
+    function fetchMonthlyAttendance(year, month) {
+        monthYearTitle.textContent = `${monthsName[month - 1]} ${year}`;
+        
+        fetch(`/employees/api/monthly-attendance/${employeeId}/?year=${year}&month=${month}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    monthData = data.month_days;
+                    updateStats(data.analytics);
+                    renderCalendar(year, month);
+                    updateCharts(data.charts, data.analytics);
+                    
+                    // Default to today's date if in this month, otherwise first day
+                    const todayStr = formatLocalDate(new Date());
+                    if (monthData[todayStr]) {
+                        selectDate(todayStr);
+                    } else {
+                        const firstDayStr = Object.keys(monthData).sort()[0];
+                        if (firstDayStr) selectDate(firstDayStr);
+                    }
+                }
+            })
+            .catch(err => console.error("Error loading monthly data: ", err));
+    }
+    
+    // Format Date helper
+    function formatLocalDate(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    
+    // Render Calendar grid
+    function renderCalendar(year, month) {
+        calendarDaysGrid.innerHTML = "";
+        
+        const firstDayIndex = new Date(year, month - 1, 1).getDay(); // Sun = 0
+        const adjustedFirstDay = firstDayIndex; // Sunday-first (Sun=0, Mon=1...)
+        
+        const lastDayNum = new Date(year, month, 0).getDate();
+        
+        // Add empty cells for padding
+        for (let i = 0; i < adjustedFirstDay; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = "calendar-day-cell empty-cell";
+            calendarDaysGrid.appendChild(emptyCell);
+        }
+        
+        // Add day cells
+        for (let d = 1; d <= lastDayNum; d++) {
+            const dateString = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dayRecord = monthData[dateString] || { status: 'ABSENT' };
+            
+            const cell = document.createElement('div');
+            cell.className = "calendar-day-cell";
+            if (dayRecord.status === 'NOT_EMPLOYED') {
+                cell.className += " empty-cell";
+            }
+            cell.dataset.date = dateString;
+            
+            const dayNumSpan = document.createElement('span');
+            dayNumSpan.className = "calendar-day-num";
+            dayNumSpan.textContent = d;
+            cell.appendChild(dayNumSpan);
+            
+            if (dayRecord.status !== 'NOT_EMPLOYED') {
+                const dot = document.createElement('span');
+                dot.className = "calendar-day-dot";
+                
+                // Apply status color coding
+                switch (dayRecord.status) {
+                    case 'PRESENT':
+                        dot.style.backgroundColor = '#22c55e'; // Green
+                        break;
+                    case 'LATE':
+                        dot.style.backgroundColor = '#f59e0b'; // Yellow
+                        break;
+                    case 'ON_LEAVE':
+                        dot.style.backgroundColor = '#3b82f6'; // Blue
+                        break;
+                    case 'WEEKEND':
+                        dot.style.backgroundColor = '#6b7280'; // Gray
+                        break;
+                    default:
+                        dot.style.backgroundColor = '#ef4444'; // Red (Absent)
+                }
+                cell.appendChild(dot);
+            }
+            
+            if (dateString === activeDateStr) {
+                cell.classList.add('active-day');
+            }
+            
+            cell.addEventListener('click', () => {
+                selectDate(dateString);
+            });
+            
+            calendarDaysGrid.appendChild(cell);
+        }
+    }
+    
+    // Select Date click handler
+    function selectDate(dateStr) {
+        activeDateStr = dateStr;
+        
+        // Update active cell class
+        document.querySelectorAll('.calendar-day-cell').forEach(cell => {
+            if (cell.dataset.date === dateStr) {
+                cell.classList.add('active-day');
+            } else {
+                cell.classList.remove('active-day');
+            }
+        });
+        
+        const dayRecord = monthData[dateStr];
+        if (!dayRecord) return;
+        
+        // Display Details
+        breakdownDateTitle.textContent = formatDateLabel(dateStr);
+        
+        // Status formatting
+        let statusBadge = "";
+        switch (dayRecord.status) {
+            case 'PRESENT':
+                statusBadge = '<span class="badge bg-success">Present</span>';
+                break;
+            case 'LATE':
+                statusBadge = '<span class="badge" style="background-color: #f59e0b; color: #fff;">Late</span>';
+                break;
+            case 'ON_LEAVE':
+                statusBadge = '<span class="badge bg-info">On Leave</span>';
+                break;
+            case 'WEEKEND':
+                statusBadge = '<span class="badge bg-secondary">Off Day</span>';
+                break;
+            case 'NOT_EMPLOYED':
+                statusBadge = '<span class="badge" style="background-color: #1f2937; color: #9ca3af; border: 1px solid #374151;">Not Employed</span>';
+                break;
+            default:
+                statusBadge = '<span class="badge bg-danger">Absent</span>';
+        }
+        
+        breakdownStatus.innerHTML = statusBadge;
+        breakdownCheckin.textContent = dayRecord.check_in || "--";
+        breakdownCheckout.textContent = dayRecord.check_out || "--";
+        breakdownHours.textContent = dayRecord.total_hours !== undefined ? `${dayRecord.total_hours} hrs` : "0.0 hrs";
+        breakdownLateness.textContent = dayRecord.lateness !== undefined ? `${dayRecord.lateness} min` : "0 min";
+        breakdownEarlyExit.textContent = dayRecord.early_exit !== undefined ? `${dayRecord.early_exit} min` : "0 min";
+        
+        breakdownBaseSalary.textContent = `₹${dayRecord.base_salary.toFixed(2)}`;
+        breakdownEarnedSalary.textContent = dayRecord.daily_salary !== undefined ? `₹${dayRecord.daily_salary.toFixed(2)}` : "₹0.00";
+        breakdownOvertimePay.textContent = dayRecord.overtime_pay !== undefined ? `+₹${dayRecord.overtime_pay.toFixed(2)}` : "+₹0.00";
+        breakdownDeduction.textContent = dayRecord.deduction !== undefined ? `-₹${dayRecord.deduction.toFixed(2)}` : "-₹0.00";
+        breakdownNetPay.textContent = dayRecord.net_pay !== undefined ? `₹${dayRecord.net_pay.toFixed(2)}` : "₹0.00";
+        breakdownOtCheckin.textContent = dayRecord.ot_check_in || "--";
+        breakdownOtCheckout.textContent = dayRecord.ot_check_out || "--";
+        breakdownOtAmount.textContent = dayRecord.ot_amount !== undefined ? `₹${dayRecord.ot_amount.toFixed(2)}` : "₹0.00";
+    }
+    
+    // Format YYYY-MM-DD to "Month DD, YYYY"
+    function formatDateLabel(dateStr) {
+        const parts = dateStr.split('-');
+        const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+        return dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    
+    // Update Aggregated Analytics stats
+    function updateStats(analytics) {
+        statPresent.textContent = analytics.present_days;
+        statAbsent.textContent = analytics.absent_days;
+        statLeave.textContent = analytics.leave_days;
+        statLate.textContent = analytics.late_arrivals;
+        statPct.textContent = `${analytics.attendance_pct}%`;
+        statProgress.style.width = `${analytics.attendance_pct}%`;
+        
+        statSalary.textContent = `₹${analytics.monthly_salary_earned.toFixed(2)}`;
+        statOvertime.textContent = `+₹${analytics.total_overtime_earnings.toFixed(2)}`;
+        statDeductions.textContent = `-₹${analytics.total_deductions.toFixed(2)}`;
+        statNet.textContent = `₹${analytics.net_monthly_salary.toFixed(2)}`;
+        statOtNet.textContent = `₹${analytics.ot_net_monthly_salary.toFixed(2)}`;
+        statGrandTotal.textContent = `₹${analytics.grand_total_pay.toFixed(2)}`;
+    }
+    
+    // Build & Update Visual Charts
+    function updateCharts(chartsData, analytics) {
+        const dates = chartsData.daily_hours.map(d => d.date.split('-')[2]); // Just day numbers
+        const hours = chartsData.daily_hours.map(d => d.hours);
+        const pays = chartsData.daily_salary.map(d => d.net_pay);
+        
+        // Destruct existing charts to avoid memory leaks or hover overlap
+        if (hoursChart) hoursChart.destroy();
+        if (payChart) payChart.destroy();
+        if (distChart) distChart.destroy();
+        
+        const chartBg = '#111827';
+        const gridColor = 'rgba(255, 255, 255, 0.05)';
+        
+        // 1. Working Hours Chart
+        const ctxHours = document.getElementById('hoursChart').getContext('2d');
+        hoursChart = new Chart(ctxHours, {
+            type: 'bar',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Hours Worked',
+                    data: hours,
+                    backgroundColor: '#6366f1',
+                    borderRadius: 3,
+                    maxBarThickness: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                    y: { grid: { color: gridColor }, ticks: { color: '#94a3b8', font: { size: 9 } }, min: 0 }
+                }
+            }
+        });
+        
+        // 2. Daily Pay Trend Chart
+        const ctxPay = document.getElementById('payChart').getContext('2d');
+        payChart = new Chart(ctxPay, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Net Earnings (₹)',
+                    data: pays,
+                    borderColor: '#22c55e',
+                    borderWidth: 2,
+                    backgroundColor: 'rgba(34, 197, 94, 0.05)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                    y: { grid: { color: gridColor }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                }
+            }
+        });
+        
+        // 3. Status Distribution Donut Chart
+        const ctxDist = document.getElementById('distChart').getContext('2d');
+        distChart = new Chart(ctxDist, {
+            type: 'doughnut',
+            data: {
+                labels: ['Present', 'Late', 'Absent', 'Leave', 'Off Days'],
+                datasets: [{
+                    data: [
+                        analytics.present_days - analytics.late_arrivals,
+                        analytics.late_arrivals,
+                        analytics.absent_days,
+                        analytics.leave_days,
+                        (Object.keys(monthData).length - analytics.present_days - analytics.absent_days - analytics.leave_days)
+                    ],
+                    backgroundColor: ['#22c55e', '#f59e0b', '#ef4444', '#3b82f6', '#6b7280'],
+                    borderWidth: 1,
+                    borderColor: '#1f2937'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#e2e8f0', font: { size: 9.5 } }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+
+<!-- Deactivate Modal -->
+<div class="modal fade" id="deactivateModal" tabindex="-1" aria-labelledby="deactivateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border border-secondary text-light">
+            <div class="modal-header border-bottom border-secondary">
+                <h5 class="modal-title fw-bold text-warning" id="deactivateModalLabel">
+                    <i class="fas fa-user-slash me-2"></i>Deactivate Employee Account
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-start">
+                <p>Are you sure you want to deactivate the employee account for <strong>{{ profile.user.get_full_name|default:profile.user.username }}</strong>?</p>
+                <p class="text-secondary small">Deactivating the account will block the employee from logging in and clocking attendance. However, all existing attendance history, records, and reports will remain fully intact for auditing purposes.</p>
+            </div>
+            <div class="modal-footer border-top border-secondary">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{% url 'employee_management:deactivate_employee' profile.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-glow-warning px-4">Deactivate</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border border-secondary text-light">
+            <div class="modal-header border-bottom border-secondary">
+                <h5 class="modal-title fw-bold text-danger" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Permanent Account Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-start">
+                <div class="alert alert-danger" style="background-color: rgba(220, 38, 38, 0.15); border: 1px solid rgba(220, 38, 38, 0.3); color: #ef4444;">
+                    <i class="fas fa-exclamation-circle me-1"></i> <strong>Critical Warning:</strong> This action will permanently delete the employee account and all associated data. This action cannot be undone.
+                </div>
+                <p>This will permanently purge:</p>
+                <ul class="text-secondary small">
+                    <li>Authentication credentials and profile logs</li>
+                    <li>Biometric face registration samples and templates</li>
+                    <li>All historic attendance, leave, and overtime records</li>
+                    <li>Uploaded documents, contracts, and notifications</li>
+                </ul>
+                <p class="mb-0">Please verify you want to proceed with purging this record.</p>
+            </div>
+            <div class="modal-footer border-top border-secondary">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{% url 'employee_management:delete_employee' profile.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-glow-danger px-4">Confirm Deletion</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

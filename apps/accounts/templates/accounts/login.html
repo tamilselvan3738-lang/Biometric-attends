@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Log In | Biometric Attendance System{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
+
+{% block full_content %}
+<div class="login-container">
+    {% include 'messages.html' %}
+    <div class="login-card glass-card text-light">
+        <div class="text-center mb-4">
+            <i class="fas fa-fingerprint text-primary" style="font-size: 3.5rem; text-shadow: 0 0 15px var(--primary-glow);"></i>
+        </div>
+        <h2 class="login-title">Welcome Back</h2>
+        <p class="login-subtitle">Authenticate to access the biometric portal</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="form-group-custom">
+                <input type="text" name="username" class="form-input-custom" placeholder="Username" required id="id_username">
+                <i class="fas fa-user form-icon-custom"></i>
+            </div>
+            
+            <div class="form-group-custom">
+                <input type="password" name="password" class="form-input-custom" placeholder="Password" required id="id_password">
+                <i class="fas fa-lock form-icon-custom"></i>
+            </div>
+            
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4" style="font-size: 0.85rem;">
+                <div class="form-check text-nowrap" style="flex-shrink: 0;">
+                    <input type="checkbox" class="form-check-input bg-dark border-secondary" id="rememberMe">
+                    <label class="form-check-label text-secondary text-nowrap" for="rememberMe">Remember Me</label>
+                </div>
+                <a href="{% url 'accounts:forgot_password' %}" class="text-primary text-decoration-none text-nowrap" style="flex-shrink: 0;">Forgot Password?</a>
+            </div>
+            
+            <button type="submit" class="btn btn-glow-primary w-100 py-2.5">
+                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

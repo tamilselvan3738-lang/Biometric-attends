@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}OTP Sent | Biometric Attendance System{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
+
+{% block full_content %}
+<div class="login-container">
+    {% include 'messages.html' %}
+    <div class="login-card glass-card text-light text-center">
+        <div class="text-center mb-4">
+            <i class="fas fa-paper-plane text-success animate-bounce" style="font-size: 3.5rem; text-shadow: 0 0 15px rgba(34, 197, 94, 0.4);"></i>
+        </div>
+        <h2 class="login-title text-success">OTP Sent</h2>
+        <p class="login-subtitle">A 6-digit OTP has been sent to your registered email address.</p>
+        
+        <div class="alert alert-info bg-dark border-secondary text-light text-start mb-4" style="font-size: 0.85rem;">
+            <i class="fas fa-info-circle me-1 text-info"></i>
+            Please check your inbox (and spam/junk folder). The code is valid for exactly <strong>5 minutes</strong>.
+        </div>
+        
+        <a href="{% url 'accounts:verify_otp' %}" class="btn btn-glow-success w-100 mb-3 py-2.5">
+            <i class="fas fa-shield-alt me-2"></i>Proceed to Verification
+        </a>
+        
+        <div class="text-center mt-3">
+            <a href="{% url 'accounts:forgot_password' %}?restart=true" class="text-secondary text-decoration-none" style="font-size: 0.85rem;">
+                <i class="fas fa-undo me-1"></i>Start Over
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

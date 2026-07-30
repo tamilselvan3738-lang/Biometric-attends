@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Admin Dashboard | Biometric Attendance System{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h2 class="fw-bold text-light">Company Admin Dashboard</h2>
+            <p class="text-secondary mb-0">Staff management, biometric enrollments, and daily attendance tracking.</p>
+        </div>
+        <span class="badge bg-secondary px-3 py-2 align-self-start align-self-md-auto">Company Admin Role</span>
+    </div>
+</div>
+
+<!-- Stats Indicators -->
+<div class="row g-3 mb-5">
+    <div class="col-md-3">
+        <div class="glass-card stat-card h-100">
+            <div>
+                <div class="stat-label">Active Staff</div>
+                <div class="stat-number text-light">{{ total_employees }}</div>
+            </div>
+            <div class="stat-icon primary"><i class="fas fa-users"></i></div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="glass-card stat-card h-100">
+            <div>
+                <div class="stat-label">Checked In Today</div>
+                <div class="stat-number text-light">{{ checked_in_today }}</div>
+            </div>
+            <div class="stat-icon success"><i class="fas fa-user-check"></i></div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="glass-card stat-card h-100">
+            <div>
+                <div class="stat-label">Late Clock-Ins</div>
+                <div class="stat-number text-light">{{ late_today }}</div>
+            </div>
+            <div class="stat-icon danger"><i class="fas fa-clock"></i></div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="glass-card stat-card h-100">
+            <div>
+                <div class="stat-label">Leave Requests</div>
+                <div class="stat-number text-light">{{ pending_leaves }}</div>
+            </div>
+            <div class="stat-icon secondary"><i class="fas fa-envelope-open-text"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- Shortcuts and Recent Activities Grid -->
+<div class="row g-4">
+    <!-- Quick Actions -->
+    <div class="col-lg-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-bolt me-2 text-primary"></i>Operational Shortcuts
+            </h5>
+            <div class="row g-3">
+                <div class="col-6 d-flex">
+                    <a href="{% url 'employee_management:add_employee' %}" class="quick-action-btn w-100">
+                        <i class="fas fa-user-plus quick-action-icon text-primary"></i>
+                        <span class="quick-action-label">Add Employee</span>
+                    </a>
+                </div>
+                <div class="col-6 d-flex">
+                    <a href="{% url 'employee_management:employee_list' %}" class="quick-action-btn w-100">
+                        <i class="fas fa-users quick-action-icon text-secondary"></i>
+                        <span class="quick-action-label">Employee Records</span>
+                    </a>
+                </div>
+                <div class="col-6 d-flex">
+                    <a href="{% url 'attendance:attendance_logs' %}" class="quick-action-btn w-100">
+                        <i class="fas fa-calendar-check quick-action-icon text-success"></i>
+                        <span class="quick-action-label">Attendance Tracker</span>
+                    </a>
+                </div>
+                <div class="col-6 d-flex">
+                    <a href="{% url 'leave_management:leave_requests' %}" class="quick-action-btn w-100">
+                        <i class="fas fa-envelope-open-text quick-action-icon text-warning"></i>
+                        <span class="quick-action-label">Leave Requests</span>
+                    </a>
+                </div>
+                <div class="col-6 d-flex">
+                    <a href="{% url 'attendance:shift_list' %}" class="quick-action-btn w-100">
+                        <i class="fas fa-clock quick-action-icon text-info"></i>
+                        <span class="quick-action-label">Shift Management</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Logs -->
+    <div class="col-lg-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-id-card me-2 text-secondary"></i>Today's Sign-Ins
+            </h5>
+            {% if recent_records %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover border-secondary" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Clock In</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in recent_records %}
+                                <tr>
+                                    <td>{{ r.user.get_full_name|default:r.user.display_username }}</td>
+                                    <td>{{ r.check_in|date:"h:i A" }}</td>
+                                    <td>
+                                        <span class="badge-status {% if r.status == 'PRESENT' %}badge-present{% else %}badge-late{% endif %}">
+                                            {{ r.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-secondary text-center py-5">No employees have clocked in today.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

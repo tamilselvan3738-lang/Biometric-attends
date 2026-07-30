@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Corporate Attendance Report | Biometric Attendance System{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/reports.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+        </a>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 flex-wrap">
+            <div>
+                <h2 class="fw-bold text-light">Corporate Attendance Report</h2>
+                <p class="text-secondary mb-0">Compile daily logs, export analytical tables, and audit time logs.</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button id="export-csv-btn" class="btn btn-export text-light text-nowrap">
+                    <i class="fas fa-file-csv me-2 text-success"></i>Export to CSV
+                </button>
+                <button id="print-report-btn" class="btn btn-export text-light text-nowrap">
+                    <i class="fas fa-print me-2 text-primary"></i>Print Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Panel -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="glass-card filter-bar text-light">
+            <h6 class="fw-bold mb-3"><i class="fas fa-filter me-2 text-primary"></i>Filter records</h6>
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small text-secondary">Department</label>
+                    <select name="department" class="form-select bg-dark text-light border-secondary">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept.pk }}" {% if selected_dept == dept.pk|stringformat:"i" %}selected{% endif %}>{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label small text-secondary">Presence Status</label>
+                    <select name="status" class="form-select bg-dark text-light border-secondary">
+                        <option value="">All Statuses</option>
+                        <option value="PRESENT" {% if selected_status == 'PRESENT' %}selected{% endif %}>Present</option>
+                        <option value="LATE" {% if selected_status == 'LATE' %}selected{% endif %}>Late</option>
+                        <option value="HALF_DAY" {% if selected_status == 'HALF_DAY' %}selected{% endif %}>Half Day</option>
+                        <option value="ABSENT" {% if selected_status == 'ABSENT' %}selected{% endif %}>Absent</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label small text-secondary">Start Date</label>
+                    <input type="date" name="start_date" value="{{ start_date }}" class="form-control bg-dark text-light border-secondary">
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label small text-secondary">End Date</label>
+                    <input type="date" name="end_date" value="{{ end_date }}" class="form-control bg-dark text-light border-secondary">
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-glow-primary w-100">
+                        <i class="fas fa-search me-1"></i>Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="glass-card p-3 p-sm-4">
+    {% if records %}
+        <!-- Desktop/Tablet View (Table Layout) -->
+        <div class="d-none d-md-block">
+            <div class="table-responsive">
+                <table class="custom-table text-light" id="report-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Employee ID</th>
+                            <th>Full Name</th>
+                            <th>Assigned Shift</th>
+                            <th>Emp Check-In</th>
+                            <th>Emp Check-Out</th>
+                            <th>Actual In</th>
+                            <th>Actual Out</th>
+                            <th>Late Min</th>
+                            <th>Working Hours</th>
+                            <th>OT Check-In</th>
+                            <th>OT Check-Out</th>
+                            <th>OT Hours</th>
+                            <th>OT Status</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in records %}
+                            <tr>
+                                <td class="font-monospace fw-bold text-nowrap">{{ r.date|date:"Y-m-d" }}</td>
+                                <td class="font-monospace">{{ r.user.employeeprofile.display_employee_id|default:"--" }}</td>
+                                <td>{{ r.user.get_full_name|default:r.user.display_username }}</td>
+                                <td>{{ r.shift_name|default:"--" }}</td>
+                                <td>{{ r.shift_start_time|time:"h:i A"|default:"--" }}</td>
+                                <td>{{ r.shift_end_time|time:"h:i A"|default:"--" }}</td>
+                                <td>{{ r.check_in|date:"h:i A" }}</td>
+                                <td>{{ r.check_out|date:"h:i A"|default:"--" }}</td>
+                                <td><span class="{% if r.lateness_minutes > 0 %}text-warning fw-bold{% endif %}">{{ r.lateness_minutes|default:"0" }} min</span></td>
+                                <td>
+                                    {% if r.total_hours %}
+                                        <strong>{{ r.total_hours }} hrs</strong>
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.ot_record %}
+                                        {{ r.ot_record.check_in|date:"h:i A" }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.ot_record and r.ot_record.check_out %}
+                                        {{ r.ot_record.check_out|date:"h:i A" }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.ot_record and r.ot_record.total_hours %}
+                                        <span class="text-success fw-bold">{{ r.ot_record.total_hours }} hrs</span>
+                                    {% else %}
+                                        <span class="text-secondary">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.ot_record %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-2" style="font-size: 0.65rem;">
+                                            {{ r.ot_record.ot_status }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge-status {% if r.status == 'PRESENT' %}badge-present{% elif r.status == 'LATE' %}badge-late{% elif r.status == 'HALF_DAY' %}badge-half-day{% else %}badge-absent{% endif %}">
+                                        {{ r.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Mobile View (Card Layout) -->
+        <div class="d-block d-md-none">
+            <div class="row g-3">
+                {% for r in records %}
+                    <div class="col-12">
+                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                            <!-- Date and Status Header -->
+                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                <span class="font-monospace text-primary fw-bold" style="font-size: 0.85rem;">{{ r.date|date:"Y-m-d" }}</span>
+                                <span class="badge {% if r.status == 'PRESENT' %}bg-success-subtle text-success border border-success-subtle{% elif r.status == 'LATE' %}bg-warning-subtle text-warning border border-warning-subtle{% elif r.status == 'HALF_DAY' %}bg-info-subtle text-info border border-info-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} py-0.5 px-2" style="font-size: 0.65rem;">
+                                    {{ r.get_status_display }}
+                                </span>
+                            </div>
+
+                            <!-- Details Grid -->
+                            <div class="border-top border-secondary pt-2">
+                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Employee ID</span>
+                                        <strong class="font-monospace text-truncate d-block" style="font-size: 0.85rem;">{{ r.user.employeeprofile.display_employee_id|default:"--" }}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Full Name</span>
+                                        <strong class="text-truncate d-block" style="font-size: 0.85rem;">{{ r.user.get_full_name|default:r.user.display_username }}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Assigned Shift</span>
+                                        <span class="text-light opacity-75 text-truncate d-block" style="font-size: 0.8rem;">{{ r.shift_name|default:"--" }}</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Emp Check-In</span>
+                                        <span class="text-light opacity-75 text-truncate d-block" style="font-size: 0.8rem;">{{ r.shift_start_time|time:"h:i A"|default:"--" }}</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Emp Check-Out</span>
+                                        <span class="text-light opacity-75 text-truncate d-block" style="font-size: 0.8rem;">{{ r.shift_end_time|time:"h:i A"|default:"--" }}</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Late Minutes</span>
+                                        <strong class="{% if r.lateness_minutes > 0 %}text-warning{% endif %}">{{ r.lateness_minutes|default:"0" }} min</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Working Hours</span>
+                                        <strong>{% if r.total_hours %}{{ r.total_hours }} hrs{% else %}--{% endif %}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Clock In</span>
+                                        <strong>{{ r.check_in|date:"h:i A" }}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Clock Out</span>
+                                        <strong>{{ r.check_out|date:"h:i A"|default:"--" }}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">OT Clock In</span>
+                                        <strong>{% if r.ot_record %}{{ r.ot_record.check_in|date:"h:i A" }}{% else %}--{% endif %}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">OT Clock Out</span>
+                                        <strong>{% if r.ot_record and r.ot_record.check_out %}{{ r.ot_record.check_out|date:"h:i A" }}{% else %}--{% endif %}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">OT Hours</span>
+                                        <strong class="text-success">{% if r.ot_record and r.ot_record.total_hours %}{{ r.ot_record.total_hours }} hrs{% else %}0{% endif %}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">OT Status</span>
+                                        <strong>{% if r.ot_record %}{{ r.ot_record.ot_status }}{% else %}--{% endif %}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5 text-secondary">
+            <i class="fas fa-file-alt mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+            <p class="mb-0">No records found matching filters.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/reports.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}OTP Expired | Biometric Attendance System{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
+
+{% block full_content %}
+<div class="login-container">
+    {% include 'messages.html' %}
+    <div class="login-card glass-card text-light text-center">
+        <div class="text-center mb-4">
+            <i class="fas fa-history text-danger" style="font-size: 3.5rem; text-shadow: 0 0 15px rgba(239, 68, 68, 0.4);"></i>
+        </div>
+        <h2 class="login-title text-danger">OTP Expired</h2>
+        <p class="login-subtitle">The One-Time Password has expired. OTPs are only valid for 5 minutes.</p>
+        
+        <div class="alert alert-warning bg-dark border-secondary text-light text-start mb-4" style="font-size: 0.85rem;">
+            <i class="fas fa-exclamation-triangle me-1 text-warning"></i>
+            For security reasons, OTP codes expire quickly. You will need to request a new recovery link.
+        </div>
+        
+        <a href="{% url 'accounts:forgot_password' %}?restart=true" class="btn btn-glow-danger w-100 mb-3 py-2.5">
+            <i class="fas fa-redo me-2"></i>Request New OTP
+        </a>
+        
+        <div class="text-center mt-3">
+            <a href="{% url 'accounts:login' %}" class="text-secondary text-decoration-none" style="font-size: 0.85rem;">
+                <i class="fas fa-arrow-left me-1"></i>Back to Log In
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

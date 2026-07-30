@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+{% block title %}Leave Request Review | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h2 class="fw-bold text-light mb-1">Leave Request Administration</h2>
+            <p class="text-secondary mb-0">Process employee time-off applications, specify approval limits, and monitor absences.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center text-nowrap">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-12">
+        <div class="glass-card p-4">
+            <ul class="nav nav-tabs border-secondary mb-4 flex-nowrap overflow-x-auto pb-1" id="leaveTabs" role="tablist" style="scrollbar-width: none; -ms-overflow-style: none;">
+                <li class="nav-item" role="presentation" style="flex-shrink: 0;">
+                    <button class="nav-link active text-light border-0" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
+                        <i class="fas fa-clock me-2 text-warning"></i>Pending Requests ({{ pending_leaves|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation" style="flex-shrink: 0;">
+                    <button class="nav-link text-light border-0" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab" aria-controls="approved" aria-selected="false">
+                        <i class="fas fa-check-circle me-2 text-success"></i>Approved Logs
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation" style="flex-shrink: 0;">
+                    <button class="nav-link text-light border-0" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab" aria-controls="rejected" aria-selected="false">
+                        <i class="fas fa-times-circle me-2 text-danger"></i>Rejected Logs
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="leaveTabsContent">
+                <!-- PENDING REQUESTS -->
+                <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+                    {% if pending_leaves %}
+                        <!-- Desktop View -->
+                        <div class="table-responsive d-none d-md-block">
+                            <table class="custom-table text-light">
+                                <thead>
+                                    <tr>
+                                        <th>Date Applied</th>
+                                        <th>Employee</th>
+                                        <th>Leave Type</th>
+                                        <th>Duration</th>
+                                        <th>Reason Summary</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for l in pending_leaves %}
+                                        <tr>
+                                            <td>{{ l.applied_at|date:"Y-m-d" }}</td>
+                                            <td>
+                                                <div class="fw-semibold text-light">{{ l.user.get_full_name|default:l.user.username }}</div>
+                                                <small class="text-muted">ID: {{ l.user.employeeprofile.employee_id|default:"--" }}</small>
+                                            </td>
+                                            <td class="fw-bold text-primary">{{ l.get_leave_type_display }}</td>
+                                            <td>{{ l.start_date }} to {{ l.end_date }}</td>
+                                            <td>{{ l.reason|truncatechars:35 }}</td>
+                                            <td class="text-end">
+                                                <div class="d-flex justify-content-end gap-2">
+                                                    <form method="POST" action="{% url 'leave_management:approve_leave' l.pk %}" class="d-inline-flex align-items-center m-0">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                                            <i class="fas fa-check me-1"></i>Approve
+                                                        </button>
+                                                    </form>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ l.pk }}">
+                                                        <i class="fas fa-times me-1"></i>Reject
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile View -->
+                        <div class="d-block d-md-none">
+                            <div class="row g-3">
+                                {% for l in pending_leaves %}
+                                    <div class="col-12">
+                                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                                <span class="text-secondary small font-monospace d-block">Applied: {{ l.applied_at|date:"Y-m-d" }}</span>
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-0.5 px-2" style="font-size: 0.65rem;">
+                                                    {{ l.get_leave_type_display }}
+                                                </span>
+                                            </div>
+                                            <div class="border-top border-secondary pt-2">
+                                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Employee</span>
+                                                        <strong class="text-truncate d-block">{{ l.user.get_full_name|default:l.user.username }}</strong>
+                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">ID: {{ l.user.employeeprofile.employee_id|default:"--" }}</small>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Duration</span>
+                                                        <strong class="d-block" style="font-size: 0.75rem;">{{ l.start_date }} to {{ l.end_date }}</strong>
+                                                    </div>
+                                                    <div class="col-12 mt-2">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Reason Summary</span>
+                                                        <p class="mb-0 text-light opacity-75 text-wrap" style="font-size: 0.75rem; line-height: 1.4;">{{ l.reason }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="border-top border-secondary pt-3 d-flex gap-2 justify-content-end align-items-center">
+                                                <form method="POST" action="{% url 'leave_management:approve_leave' l.pk %}" class="d-inline-flex align-items-center m-0">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-outline-success py-1 px-2.5 d-inline-flex align-items-center justify-content-center" style="font-size: 0.75rem;">
+                                                        <i class="fas fa-check me-1"></i>Approve
+                                                    </button>
+                                                </form>
+                                                <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2.5 d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#rejectModal{{ l.pk }}" style="font-size: 0.75rem;">
+                                                    <i class="fas fa-times me-1"></i>Reject
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-secondary">
+                            <i class="fas fa-clipboard-check mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+                            <p class="mb-0">No pending leave requests to review.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- APPROVED LOGS -->
+                <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
+                    {% if approved_leaves %}
+                        <!-- Desktop View -->
+                        <div class="table-responsive d-none d-md-block">
+                            <table class="custom-table text-light">
+                                <thead>
+                                    <tr>
+                                        <th>Date Approved</th>
+                                        <th>Employee</th>
+                                        <th>Leave Type</th>
+                                        <th>Duration</th>
+                                        <th>Approved By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for l in approved_leaves %}
+                                        <tr>
+                                            <td>{{ l.applied_at|date:"Y-m-d" }}</td>
+                                            <td>{{ l.user.get_full_name|default:l.user.username }}</td>
+                                            <td class="text-success">{{ l.get_leave_type_display }}</td>
+                                            <td>{{ l.start_date }} to {{ l.end_date }}</td>
+                                            <td>{{ l.approved_by.username|default:"System" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile View -->
+                        <div class="d-block d-md-none">
+                            <div class="row g-3">
+                                {% for l in approved_leaves %}
+                                    <div class="col-12">
+                                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                                <span class="text-secondary small font-monospace d-block">Approved: {{ l.applied_at|date:"Y-m-d" }}</span>
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-2" style="font-size: 0.65rem;">
+                                                    {{ l.get_leave_type_display }}
+                                                </span>
+                                            </div>
+                                            <div class="border-top border-secondary pt-2">
+                                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Employee</span>
+                                                        <strong class="text-truncate d-block">{{ l.user.get_full_name|default:l.user.username }}</strong>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Duration</span>
+                                                        <strong class="d-block" style="font-size: 0.75rem;">{{ l.start_date }} to {{ l.end_date }}</strong>
+                                                    </div>
+                                                    <div class="col-12 mt-1">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Approved By</span>
+                                                        <span class="text-light opacity-75 d-block">{{ l.approved_by.username|default:"System" }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-secondary">
+                            <i class="fas fa-check-circle mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+                            <p class="mb-0">No approved leave records found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- REJECTED LOGS -->
+                <div class="tab-pane fade" id="rejected" role="tabpanel" aria-labelledby="rejected-tab">
+                    {% if rejected_leaves %}
+                        <!-- Desktop View -->
+                        <div class="table-responsive d-none d-md-block">
+                            <table class="custom-table text-light">
+                                <thead>
+                                    <tr>
+                                        <th>Date Rejected</th>
+                                        <th>Employee</th>
+                                        <th>Leave Type</th>
+                                        <th>Duration</th>
+                                        <th>Reason for Rejection</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for l in rejected_leaves %}
+                                        <tr>
+                                            <td>{{ l.applied_at|date:"Y-m-d" }}</td>
+                                            <td>{{ l.user.get_full_name|default:l.user.username }}</td>
+                                            <td class="text-danger">{{ l.get_leave_type_display }}</td>
+                                            <td>{{ l.start_date }} to {{ l.end_date }}</td>
+                                            <td class="text-secondary">{{ l.rejection_reason|default:"--" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile View -->
+                        <div class="d-block d-md-none">
+                            <div class="row g-3">
+                                {% for l in rejected_leaves %}
+                                    <div class="col-12">
+                                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                                <span class="text-secondary small font-monospace d-block">Rejected: {{ l.applied_at|date:"Y-m-d" }}</span>
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-0.5 px-2" style="font-size: 0.65rem;">
+                                                    {{ l.get_leave_type_display }}
+                                                </span>
+                                            </div>
+                                            <div class="border-top border-secondary pt-2">
+                                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Employee</span>
+                                                        <strong class="text-truncate d-block">{{ l.user.get_full_name|default:l.user.username }}</strong>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Duration</span>
+                                                        <strong class="d-block" style="font-size: 0.75rem;">{{ l.start_date }} to {{ l.end_date }}</strong>
+                                                    </div>
+                                                    <div class="col-12 mt-1">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Rejection Reason</span>
+                                                        <p class="mb-0 text-light opacity-75 text-wrap" style="font-size: 0.75rem; line-height: 1.4;">{{ l.rejection_reason|default:"--" }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-secondary">
+                            <i class="fas fa-times-circle mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+                            <p class="mb-0">No rejected leave records found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- REJECT REASON MODALS (Rendered at top-level of block to prevent glass-card z-index backdrop issues) -->
+{% if pending_leaves %}
+    {% for l in pending_leaves %}
+        <div class="modal fade" id="rejectModal{{ l.pk }}" tabindex="-1" aria-hidden="true" data-bs-backdrop="false">
+            <div class="modal-dialog">
+                <div class="modal-content bg-dark border-secondary text-light">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title">Reject Leave Application</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="POST" action="{% url 'leave_management:reject_leave' l.pk %}">
+                        {% csrf_token %}
+                        <div class="modal-body text-start">
+                            <p>Please specify a reason for rejecting the leave request of <strong>{{ l.user.get_full_name|default:l.user.username }}</strong>.</p>
+                            <textarea name="rejection_reason" class="form-control bg-dark text-light border-secondary" rows="3" placeholder="Specify reason..." required></textarea>
+                        </div>
+                        <div class="modal-footer border-secondary">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-glow-primary">Confirm Rejection</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<style>
+    .modal {
+        background-color: rgba(0, 0, 0, 0.6);
+    }
+    .nav-tabs .nav-link.active {
+        background-color: var(--bg-tertiary) !important;
+        border-bottom: 3px solid var(--primary) !important;
+    }
+    .nav-tabs .nav-link:hover:not(.active) {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+    }
+</style>
+{% endblock %}

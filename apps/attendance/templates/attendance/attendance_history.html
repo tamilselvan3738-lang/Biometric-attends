@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}My Attendance History | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h2 class="fw-bold text-light mb-1">My Attendance History</h2>
+            <p class="text-secondary mb-0">View historical records of your check-in, check-out, and total work hours.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center text-nowrap">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    {% if history_list %}
+        <div class="table-responsive">
+            <table class="custom-table text-light text-nowrap">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Clock In</th>
+                        <th>Clock Out</th>
+                        <th>Work Hours</th>
+                        <th>Daily Salary</th>
+                        <th>OT Clock In</th>
+                        <th>OT Clock Out</th>
+                        <th>OT Pay</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in history_list %}
+                        <tr>
+                            <td class="fw-bold text-primary">{{ item.record.date|date:"F d, Y" }}</td>
+                            <td>
+                                {{ item.record.check_in|date:"h:i A" }}
+                                {% if item.record.dynamic_lateness_minutes > 0 %}
+                                    <span class="text-danger d-block small mt-1" style="font-size: 0.75rem;"><i class="fas fa-exclamation-circle me-1"></i>+{{ item.record.dynamic_lateness_minutes }}m late</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.record.check_out %}
+                                    {{ item.record.check_out|date:"h:i A" }}
+                                    {% if item.record.dynamic_is_early_checkout %}
+                                        <span class="text-warning d-block small mt-1" style="font-size: 0.75rem;"><i class="fas fa-exclamation-triangle me-1"></i>-{{ item.record.dynamic_early_checkout_minutes }}m early</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-warning"><i class="fas fa-spinner fa-spin me-1"></i>Active Shift</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.record.total_hours %}
+                                    <strong class="text-light">{{ item.record.total_hours }} hrs</strong>
+                                {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="text-success fw-bold">₹{{ item.record.calculated_salary }}</span>
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">Base: ₹{{ item.record.base_daily_salary }}</small>
+                            </td>
+                            <td>
+                                <span class="text-info">{{ item.ot_check_in }}</span>
+                            </td>
+                            <td>
+                                <span class="text-info">{{ item.ot_check_out }}</span>
+                            </td>
+                            <td>
+                                {% if item.ot_amount > 0 %}
+                                    <span class="text-success fw-bold">₹{{ item.ot_amount }}</span>
+                                {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge-status {% if item.record.status == 'PRESENT' %}badge-present{% elif item.record.status == 'LATE' %}badge-late{% else %}badge-absent{% endif %}">
+                                    {{ item.record.get_status_display }}
+                                </span>
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-5 text-secondary">
+            <i class="fas fa-calendar-alt mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+            <p class="mb-0">No attendance records found for your account.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

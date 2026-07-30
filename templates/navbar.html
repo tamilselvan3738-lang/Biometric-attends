@@ -1,0 +1,47 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg glass-card px-2 px-sm-3 px-md-4 py-2 mb-4 d-flex flex-nowrap justify-content-between align-items-center sticky-top" style="position: sticky; top: 0; z-index: 1030 !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; background: rgba(10, 15, 30, 0.7) !important;">
+    <div class="d-flex align-items-center min-w-0">
+        <!-- Sidebar Toggle for Mobile -->
+        <button class="btn btn-outline-secondary sidebar-toggle-btn me-2 me-sm-3" id="sidebar-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 gap-sm-3 flex-shrink-0">
+        <!-- Notification Dropdown -->
+        <a href="{% url 'notifications:list' %}" class="btn btn-outline-secondary position-relative rounded-circle border-0 p-0" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0 !important;">
+            <i class="fas fa-bell text-secondary" style="font-size: 0.9rem;"></i>
+            {% if unread_notifications_count %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; padding: 0.25em 0.4em;">
+                {{ unread_notifications_count }}
+            </span>
+            {% endif %}
+        </a>
+
+        <!-- User Profile Dropdown -->
+        <div class="dropdown">
+            <button class="btn border-0 bg-transparent text-light px-1 px-sm-2" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="flex-shrink: 0;">
+                <div class="d-flex align-items-center gap-2">
+                    {% if request.user.userprofile.avatar %}
+                        <img src="{{ request.user.userprofile.avatar.url }}" alt="avatar" class="rounded-circle border border-secondary" style="width: 28px; height: 28px; object-fit: cover; flex-shrink: 0;">
+                    {% else %}
+                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-weight: bold; font-size: 0.8rem; flex-shrink: 0;">
+                            {{ request.user.email|slice:":1"|upper|default:"U" }}
+                        </div>
+                    {% endif %}
+                    <span class="d-none d-md-inline-block text-start" style="font-size: 0.8rem; line-height: 1.2;">
+                        <strong class="d-block text-light" style="font-size: 0.85rem;">{{ request.user.get_full_name|default:request.user.username }}</strong>
+                        <small style="font-size: 0.75rem; color: var(--text-secondary); opacity: 0.8;">{{ request.user.get_role_display }}</small>
+                    </span>
+                    <i class="fas fa-chevron-down text-muted" style="font-size: 0.7rem; flex-shrink: 0;"></i>
+                </div>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end glass-card border-secondary text-light mt-2" aria-labelledby="profileDropdown" style="background: var(--bg-secondary); z-index: 1050 !important; min-width: 160px;">
+                <li><a class="dropdown-item" href="{% url 'accounts:profile' %}" style="font-size: 0.85rem;"><i class="fas fa-user me-2 text-primary" style="font-size: 0.85rem;"></i>My Profile</a></li>
+                <li><a class="dropdown-item" href="{% url 'accounts:change_password' %}" style="font-size: 0.85rem;"><i class="fas fa-key me-2 text-secondary" style="font-size: 0.85rem;"></i>Change Password</a></li>
+                <li><hr class="dropdown-divider border-secondary"></li>
+                <li><a class="dropdown-item" href="{% url 'accounts:logout' %}" style="font-size: 0.85rem;"><i class="fas fa-sign-out-alt me-2 text-danger" style="font-size: 0.85rem;"></i>Log Out</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>

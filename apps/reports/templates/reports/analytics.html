@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Corporate Analytics | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2 class="fw-bold text-light">Corporate Analytics</h2>
+        <p class="text-secondary">Track attendance metrics, lateness ratios, and department performances.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Attendance Rate gauge -->
+    <div class="col-lg-6">
+        <div class="glass-card p-4 text-center text-light">
+            <h5 class="fw-bold text-start mb-4"><i class="fas fa-percent me-2 text-primary"></i>Weekly Attendance Rate</h5>
+            
+            <div class="d-inline-flex position-relative align-items-center justify-content-center mb-3" style="width: 180px; height: 180px;">
+                <svg width="100%" height="100%" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="var(--bg-tertiary)" stroke-width="8" fill="transparent" />
+                    <circle cx="50" cy="50" r="40" stroke="var(--success)" stroke-width="8" fill="transparent" 
+                            stroke-dasharray="251.32" stroke-dashoffset="{{ attendance_offset }}"
+                            style="stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s ease-out;" />
+                </svg>
+                <div class="position-absolute" style="font-size: 1.85rem; font-weight: 700;">{{ attendance_rate }}%</div>
+            </div>
+            
+            <p class="text-secondary small mb-0">Percentage of active employees checking in over the last 7 days.</p>
+        </div>
+    </div>
+
+    <!-- Lateness Rate gauge -->
+    <div class="col-lg-6">
+        <div class="glass-card p-4 text-center text-light">
+            <h5 class="fw-bold text-start mb-4"><i class="fas fa-exclamation-triangle me-2 text-danger"></i>Lateness Ratio</h5>
+            
+            <div class="d-inline-flex position-relative align-items-center justify-content-center mb-3" style="width: 180px; height: 180px;">
+                <svg width="100%" height="100%" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="var(--bg-tertiary)" stroke-width="8" fill="transparent" />
+                    <circle cx="50" cy="50" r="40" stroke="var(--warning)" stroke-width="8" fill="transparent" 
+                            stroke-dasharray="251.32" stroke-dashoffset="{{ lateness_offset }}"
+                            style="stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s ease-out;" />
+                </svg>
+                <div class="position-absolute" style="font-size: 1.85rem; font-weight: 700;">{{ lateness_rate }}%</div>
+            </div>
+            
+            <p class="text-secondary small mb-0">Percentage of arrivals logged after 09:30 AM over the last 7 days.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-12">
+        <div class="glass-card p-4 text-light">
+            <h5 class="fw-bold mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-info-circle me-2 text-primary"></i>Company Operational Index
+            </h5>
+            <div class="row g-3" style="font-size: 0.95rem;">
+                <div class="col-md-4">
+                    <span class="text-secondary d-block">Active Employee Count</span>
+                    <strong class="text-light" style="font-size: 1.25rem;">{{ total_staff }} Staff</strong>
+                </div>
+                <div class="col-md-4">
+                    <span class="text-secondary d-block">Pending Leave Applications</span>
+                    <strong class="text-warning" style="font-size: 1.25rem;">{{ pending_leaves }} Requests</strong>
+                </div>
+                <div class="col-md-4">
+                    <span class="text-secondary d-block">Standard Arrival Threshold</span>
+                    <strong class="text-primary" style="font-size: 1.25rem;">09:30 AM Daily</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

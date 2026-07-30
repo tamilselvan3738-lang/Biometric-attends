@@ -1,0 +1,508 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Monitoring | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+        </a>
+        <h2 class="fw-bold text-light">Attendance Monitoring</h2>
+        <p class="text-secondary">Audit and review employee sign-ins, timestamps, and camera logs.</p>
+    </div>
+</div>
+
+<!-- Tabs for Audit Logs and Daily Sheets -->
+<div class="row g-4">
+    <div class="col-md-12">
+        <div class="glass-card p-3 p-sm-4">
+            <ul class="nav nav-tabs border-secondary mb-4 flex-nowrap overflow-x-auto pb-1" id="attendanceTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active text-light border-0" id="records-tab" data-bs-toggle="tab" data-bs-target="#records" type="button" role="tab" aria-controls="records" aria-selected="true">
+                        <i class="fas fa-calendar-alt me-2 text-primary"></i>Daily Records Sheet
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-light border-0" id="payroll-tab" data-bs-toggle="tab" data-bs-target="#payroll" type="button" role="tab" aria-controls="payroll" aria-selected="false">
+                        <i class="fas fa-file-invoice-dollar me-2 text-success"></i>Daily Payroll Sheet
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-light border-0" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab" aria-controls="logs" aria-selected="false">
+                        <i class="fas fa-history me-2 text-secondary"></i>Transaction Audit Logs
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="attendanceTabsContent">
+                <!-- Tab 1: Daily Records Sheet -->
+                <div class="tab-pane fade show active" id="records" role="tabpanel" aria-labelledby="records-tab">
+                    {% if records %}
+                        <!-- Desktop/Tablet View (Table Layout) -->
+                        <div class="d-none d-md-block">
+                            <div class="table-responsive">
+                                <table class="custom-table text-light">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Employee</th>
+                                            <th>Clock In</th>
+                                            <th>Clock Out</th>
+                                            <th>Total Hours</th>
+                                            <th>OT (Hours / Pay)</th>
+                                            <th>Daily Salary</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in daily_records_list %}
+                                            <tr>
+                                                <td class="fw-bold text-secondary text-nowrap">{{ item.record.date|date:"Y-m-d" }}</td>
+                                                <td>
+                                                    <div class="fw-semibold text-light">{{ item.record.user.get_full_name|default:item.record.user.display_username }}</div>
+                                                    <small class="text-secondary opacity-75">Username: {{ item.record.user.display_username }}</small>
+                                                </td>
+                                                <td>
+                                                    {{ item.record.check_in|date:"h:i:s A" }}
+                                                    {% if item.record.dynamic_lateness_minutes > 0 %}
+                                                        <span class="text-danger d-block small mt-1" style="font-size: 0.75rem;"><i class="fas fa-exclamation-circle me-1"></i>+{{ item.record.dynamic_lateness_minutes }}m late</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if item.record.check_out %}
+                                                        {{ item.record.check_out|date:"h:i:s A" }}
+                                                        {% if item.record.dynamic_is_early_checkout %}
+                                                            <span class="text-warning d-block small mt-1" style="font-size: 0.75rem;"><i class="fas fa-exclamation-triangle me-1"></i>-{{ item.record.dynamic_early_checkout_minutes }}m early</span>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <span class="text-muted">--</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if item.record.total_hours %}
+                                                        {{ item.record.total_hours }} hrs
+                                                    {% else %}
+                                                        --
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if item.ot_hours %}
+                                                        <span class="text-info fw-semibold">{{ item.ot_hours }} hrs</span>
+                                                        <small class="text-secondary opacity-75 d-block" style="font-size: 0.7rem;">Pay: ₹{{ item.ot_amount|floatformat:2 }}</small>
+                                                    {% else %}
+                                                        <span class="text-muted">--</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <span class="text-success fw-bold">₹{{ item.record.calculated_salary }}</span>
+                                                    <small class="text-secondary opacity-75 d-block" style="font-size: 0.7rem;">Base: ₹{{ item.record.base_daily_salary }}</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge-status {% if item.record.status == 'PRESENT' %}badge-present{% elif item.record.status == 'LATE' %}badge-late{% else %}badge-absent{% endif %}">
+                                                        {{ item.record.get_status_display }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <div class="d-flex justify-content-end gap-1">
+                                                        <a href="{% url 'attendance:edit_attendance_record' item.record.pk %}" class="btn btn-sm btn-outline-primary border-secondary" title="Edit Regular Record">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        {% if item.ot_record %}
+                                                            <a href="{% url 'attendance:edit_overtime_record' item.ot_record.pk %}" class="btn btn-sm btn-outline-info border-secondary" title="Edit Overtime Record">
+                                                                <i class="fas fa-business-time"></i>
+                                                            </a>
+                                                        {% endif %}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Mobile View (Card Layout) -->
+                        <div class="d-block d-md-none">
+                            <div class="row g-3">
+                                {% for item in daily_records_list %}
+                                    <div class="col-12">
+                                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                                            <!-- Date and Status Header -->
+                                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                                <span class="fw-bold text-secondary" style="font-size: 0.85rem;">{{ item.record.date|date:"Y-m-d" }}</span>
+                                                <span class="badge {% if item.record.status == 'PRESENT' %}bg-success-subtle text-success border border-success-subtle{% elif item.record.status == 'LATE' %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} py-0.5 px-2" style="font-size: 0.65rem;">
+                                                    {{ item.record.get_status_display }}
+                                                </span>
+                                            </div>
+
+                                            <!-- Details Grid -->
+                                            <div class="border-top border-secondary pt-2">
+                                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Employee</span>
+                                                        <strong class="text-truncate d-block" style="font-size: 0.85rem;">{{ item.record.user.get_full_name|default:item.record.user.display_username }}</strong>
+                                                        <small class="text-secondary opacity-75 d-block text-truncate" style="font-size: 0.7rem;">Username: {{ item.record.user.display_username }}</small>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Total Hours</span>
+                                                        <strong>{% if item.record.total_hours %}{{ item.record.total_hours }} hrs{% else %}--{% endif %}</strong>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Clock In</span>
+                                                        <strong>{{ item.record.check_in|date:"h:i:s A" }}</strong>
+                                                        {% if item.record.dynamic_lateness_minutes > 0 %}
+                                                            <span class="text-danger d-block small" style="font-size: 0.7rem;">+{{ item.record.dynamic_lateness_minutes }}m late</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Clock Out</span>
+                                                        <strong>{% if item.record.check_out %}{{ item.record.check_out|date:"h:i:s A" }}{% else %}--{% endif %}</strong>
+                                                        {% if item.record.check_out and item.record.dynamic_is_early_checkout %}
+                                                            <span class="text-warning d-block small" style="font-size: 0.7rem;">-{{ item.record.dynamic_early_checkout_minutes }}m early</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Daily Salary</span>
+                                                        <strong class="text-success">₹{{ item.record.calculated_salary }}</strong>
+                                                        <small class="text-secondary opacity-75 d-block" style="font-size: 0.7rem;">Base: ₹{{ item.record.base_daily_salary }}</small>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">OT (Hours / Pay)</span>
+                                                        {% if item.ot_hours %}
+                                                            <strong class="text-info">{{ item.ot_hours }} hrs</strong>
+                                                            <small class="text-secondary opacity-75 d-block" style="font-size: 0.7rem;">Pay: ₹{{ item.ot_amount|floatformat:2 }}</small>
+                                                        {% else %}
+                                                            <span class="text-muted">--</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Actions Row -->
+                                            <div class="border-top border-secondary pt-3 mt-2 d-flex gap-2 justify-content-end align-items-center">
+                                                <a href="{% url 'attendance:edit_attendance_record' item.record.pk %}" class="btn btn-outline-primary py-1 px-2.5 d-inline-flex align-items-center justify-content-center" style="font-size: 0.75rem; color: var(--text-primary) !important;">
+                                                    <i class="fas fa-edit me-1"></i>Edit Regular
+                                                </a>
+                                                {% if item.ot_record %}
+                                                    <a href="{% url 'attendance:edit_overtime_record' item.ot_record.pk %}" class="btn btn-outline-info py-1 px-2.5 d-inline-flex align-items-center justify-content-center" style="font-size: 0.75rem; color: var(--text-primary) !important;">
+                                                        <i class="fas fa-business-time me-1"></i>Edit OT
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-secondary">
+                            <i class="fas fa-calendar-alt mb-3" style="font-size: 3.5rem; color: var(--text-muted);"></i>
+                            <p class="mb-0">No daily records recorded today.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Tab 2: Daily Payroll Sheet -->
+                <div class="tab-pane fade" id="payroll" role="tabpanel" aria-labelledby="payroll-tab">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                        <div>
+                            <h6 class="fw-bold text-light mb-1">Payroll Calculator: {{ selected_date }}</h6>
+                            <p class="text-secondary small mb-0">List of all active employees, their shift compliance and dynamic daily salary calculation.</p>
+                        </div>
+                        
+                        <form method="GET" class="d-flex gap-2 align-items-center">
+                            <label class="small text-secondary fw-semibold text-nowrap mb-0">Select Date:</label>
+                            <input type="date" name="date" value="{{ selected_date }}" class="form-control form-control-sm bg-dark text-light border-secondary" style="width: auto;" onchange="this.form.submit()">
+                        </form>
+                    </div>
+
+                    {% if daily_payroll_sheet %}
+                        <!-- Desktop/Tablet View (Table Layout) -->
+                        <div class="d-none d-md-block">
+                            <div class="table-responsive">
+                                <table class="custom-table text-light">
+                                    <thead>
+                                        <tr>
+                                            <th>Employee ID</th>
+                                            <th>Name</th>
+                                            <th>Clock In</th>
+                                            <th>Clock Out</th>
+                                            <th>Deductions</th>
+                                            <th>Status</th>
+                                            <th>Base Salary</th>
+                                            <th>OT (Hours / Pay)</th>
+                                            <th class="text-end">Total Daily Payout</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in daily_payroll_sheet %}
+                                            <tr>
+                                                <td class="font-monospace">{{ row.employee.display_employee_id }}</td>
+                                                <td>
+                                                    <span class="fw-bold">{{ row.employee.user.get_full_name|default:row.employee.user.display_username }}</span>
+                                                    <small class="text-secondary opacity-75 d-block">Dept: {{ row.employee.department.name|default:"--" }}</small>
+                                                </td>
+                                                <td>
+                                                    {{ row.check_in }}
+                                                    {% if row.late_minutes > 0 %}
+                                                        <span class="text-danger d-block small" style="font-size: 0.7rem;">+{{ row.late_minutes }}m late</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {{ row.check_out }}
+                                                    {% if row.early_minutes > 0 %}
+                                                        <span class="text-warning d-block small" style="font-size: 0.7rem;">-{{ row.early_minutes }}m early</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if row.late_minutes > 0 or row.early_minutes > 0 %}
+                                                        <span class="text-danger fw-semibold" style="font-size: 0.8rem;">
+                                                            <i class="fas fa-arrow-down me-1"></i>Late/Early Shift
+                                                         </span>
+                                                    {% elif row.status == "Absent / Leave" %}
+                                                        <span class="text-danger fw-semibold" style="font-size: 0.8rem;">
+                                                            <i class="fas fa-times-circle me-1"></i>Absent (100% deduction)
+                                                         </span>
+                                                    {% elif "Leave" in row.status %}
+                                                        <span class="text-success fw-semibold" style="font-size: 0.8rem;">
+                                                            <i class="fas fa-check-circle me-1"></i>Approved Leave (Paid)
+                                                         </span>
+                                                    {% else %}
+                                                        <span class="text-success small"><i class="fas fa-check-circle me-1"></i>None</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <span class="badge-status {% if row.status == 'Present' or 'Leave' in row.status %}badge-present{% elif 'Late' in row.status %}badge-late{% elif 'Holiday' in row.status %}badge-present{% else %}badge-absent{% endif %}">
+                                                        {{ row.status }}
+                                                    </span>
+                                                </td>
+                                                <td>₹{{ row.base_salary|floatformat:2 }}</td>
+                                                <td>
+                                                    {% if row.ot_hours > 0 %}
+                                                        <span class="text-info fw-semibold">{{ row.ot_hours }} hrs</span>
+                                                        <small class="text-secondary opacity-75 d-block" style="font-size: 0.7rem;">Pay: ₹{{ row.ot_amount|floatformat:2 }}</small>
+                                                    {% else %}
+                                                        <span class="text-muted">--</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-end fw-bold {% if row.paid_salary == 0 %}text-danger{% else %}text-success{% endif %}">
+                                                    ₹{{ row.paid_salary|floatformat:2 }}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Mobile View (Card Layout) -->
+                        <div class="d-block d-md-none">
+                            <div class="row g-3">
+                                {% for row in daily_payroll_sheet %}
+                                    <div class="col-12">
+                                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                                            <!-- Employee ID and Status Header -->
+                                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                                <span class="font-monospace text-primary fw-bold" style="font-size: 0.85rem;">{{ row.employee.display_employee_id }}</span>
+                                                <span class="badge {% if row.status == 'Present' or 'Holiday' in row.status or 'Leave' in row.status %}bg-success-subtle text-success border border-success-subtle{% elif 'Late' in row.status %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} py-0.5 px-2" style="font-size: 0.65rem;">
+                                                    {{ row.status }}
+                                                </span>
+                                            </div>
+
+                                            <!-- Details Grid -->
+                                            <div class="border-top border-secondary pt-2">
+                                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Employee</span>
+                                                        <strong class="text-truncate d-block" style="font-size: 0.85rem;">{{ row.employee.user.get_full_name|default:row.employee.user.display_username }}</strong>
+                                                        <small class="text-secondary opacity-75 d-block text-truncate" style="font-size: 0.7rem;">Dept: {{ row.employee.department.name|default:"--" }}</small>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Total Daily Payout</span>
+                                                        <strong class="{% if row.paid_salary == 0 %}text-danger{% else %}text-success{% endif %}" style="font-size: 0.85rem;">₹{{ row.paid_salary|floatformat:2 }}</strong>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Clock In</span>
+                                                        <strong>{{ row.check_in }}</strong>
+                                                        {% if row.late_minutes > 0 %}
+                                                            <span class="text-danger d-block small" style="font-size: 0.7rem;">+{{ row.late_minutes }}m late</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Clock Out</span>
+                                                        <strong>{{ row.check_out }}</strong>
+                                                        {% if row.early_minutes > 0 %}
+                                                            <span class="text-warning d-block small" style="font-size: 0.7rem;">-{{ row.early_minutes }}m early</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Base Salary</span>
+                                                        <strong>₹{{ row.base_salary|floatformat:2 }}</strong>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">OT (Hours / Pay)</span>
+                                                        {% if row.ot_hours > 0 %}
+                                                            <strong class="text-info">{{ row.ot_hours }} hrs</strong>
+                                                            <small class="text-secondary opacity-75 d-block" style="font-size: 0.7rem;">Pay: ₹{{ row.ot_amount|floatformat:2 }}</small>
+                                                        {% else %}
+                                                            <span class="text-muted">--</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-12 mt-1">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Deductions</span>
+                                                        {% if row.late_minutes > 0 or row.early_minutes > 0 %}
+                                                            <span class="text-danger fw-semibold" style="font-size: 0.75rem;"><i class="fas fa-arrow-down me-1"></i>Late/Early Shift</span>
+                                                        {% elif row.status == "Absent / Leave" %}
+                                                            <span class="text-danger fw-semibold" style="font-size: 0.75rem;"><i class="fas fa-times-circle me-1"></i>Absent (100% deduction)</span>
+                                                        {% elif "Leave" in row.status %}
+                                                            <span class="text-success fw-semibold" style="font-size: 0.75rem;"><i class="fas fa-check-circle me-1"></i>Approved Leave (Paid)</span>
+                                                        {% else %}
+                                                            <span class="text-success small"><i class="fas fa-check-circle me-1"></i>None</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-secondary">
+                            <i class="fas fa-users mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+                            <p class="mb-0">No active employees found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Tab 3: Transaction Audit Logs -->
+                <div class="tab-pane fade" id="logs" role="tabpanel" aria-labelledby="logs-tab">
+                    {% if logs %}
+                        <!-- Desktop/Tablet View (Table Layout) -->
+                        <div class="d-none d-md-block">
+                            <div class="table-responsive">
+                                <table class="custom-table text-light">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Employee</th>
+                                            <th>Action Type</th>
+                                            <th>Status</th>
+                                            <th>Similarity Audit</th>
+                                            <th>Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for l in logs %}
+                                            <tr>
+                                                <td class="font-monospace text-secondary">{{ l.timestamp|date:"Y-m-d H:i:s" }}</td>
+                                                <td>
+                                                    <div class="fw-semibold text-light">{{ l.user.get_full_name|default:l.user.display_username }}</div>
+                                                    <small class="text-secondary opacity-75">{{ l.user.display_username }}</small>
+                                                </td>
+                                                <td>
+                                                    {% if l.action == 'CHECK_IN' %}
+                                                        <span class="text-primary"><i class="fas fa-sign-in-alt me-1"></i>Clock In</span>
+                                                    {% else %}
+                                                        <span class="text-secondary"><i class="fas fa-sign-out-alt me-1"></i>Clock Out</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <span class="badge-status {% if l.status == 'SUCCESS' %}badge-present{% else %}badge-absent{% endif %}">
+                                                        {{ l.get_status_display }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {% if l.similarity_score %}
+                                                        <div class="d-flex align-items-center" style="min-width: 110px;">
+                                                            <div class="progress me-2" style="height: 6px; width: 60px; background-color: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden;">
+                                                                <div class="progress-bar {% if l.status == 'SUCCESS' %}bg-success{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ l.similarity_percentage }}%;" aria-valuenow="{{ l.similarity_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                                            </div>
+                                                            <span class="small font-monospace {% if l.status == 'SUCCESS' %}text-success{% else %}text-danger{% endif %}" style="font-size: 0.8rem; font-weight: 600;">{{ l.similarity_score }}</span>
+                                                        </div>
+                                                    {% else %}
+                                                        <span class="text-muted">N/A</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-secondary" style="font-size: 0.85rem;">{{ l.details|default:"N/A" }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Mobile View (Card Layout) -->
+                        <div class="d-block d-md-none">
+                            <div class="row g-3">
+                                {% for l in logs %}
+                                    <div class="col-12">
+                                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                                            <!-- Timestamp and Status Header -->
+                                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                                <span class="font-monospace text-secondary" style="font-size: 0.8rem;">{{ l.timestamp|date:"Y-m-d H:i:s" }}</span>
+                                                <span class="badge {% if l.status == 'SUCCESS' %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} py-0.5 px-2" style="font-size: 0.65rem;">
+                                                    {{ l.get_status_display }}
+                                                </span>
+                                            </div>
+
+                                            <!-- Details Grid -->
+                                            <div class="border-top border-secondary pt-2">
+                                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Employee</span>
+                                                        <strong class="text-truncate d-block" style="font-size: 0.85rem;">{{ l.user.get_full_name|default:l.user.display_username }}</strong>
+                                                        <small class="text-secondary opacity-75 d-block text-truncate" style="font-size: 0.7rem;">{{ l.user.display_username }}</small>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Action Type</span>
+                                                        {% if l.action == 'CHECK_IN' %}
+                                                            <strong class="text-primary"><i class="fas fa-sign-in-alt me-1"></i>Clock In</strong>
+                                                        {% else %}
+                                                            <strong class="text-secondary"><i class="fas fa-sign-out-alt me-1"></i>Clock Out</strong>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Similarity Audit</span>
+                                                        {% if l.similarity_score %}
+                                                            <div class="d-flex align-items-center">
+                                                                <span class="small font-monospace {% if l.status == 'SUCCESS' %}text-success{% else %}text-danger{% endif %}" style="font-size: 0.8rem; font-weight: 600;">{{ l.similarity_score }}</span>
+                                                            </div>
+                                                        {% else %}
+                                                            <span class="text-muted">N/A</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-12 mt-1">
+                                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Details</span>
+                                                        <p class="mb-0 text-light opacity-75" style="line-height: 1.4; font-size: 0.75rem;">{{ l.details|default:"N/A" }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-secondary">
+                            <i class="fas fa-history mb-3" style="font-size: 3.5rem; color: var(--text-muted);"></i>
+                            <p class="mb-0">No transaction logs available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .nav-tabs .nav-link.active {
+        background-color: var(--bg-tertiary) !important;
+        border-bottom: 3px solid var(--primary) !important;
+    }
+    .nav-tabs .nav-link:hover:not(.active) {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+    }
+</style>
+{% endblock %}

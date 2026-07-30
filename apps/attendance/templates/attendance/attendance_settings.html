@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %}Shift & Calendar Settings | Biometric Attendance System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-container {
+        background: rgba(31, 41, 55, 0.4);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+    }
+    
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 5px;
+        text-align: center;
+    }
+    
+    .calendar-day-label {
+        font-weight: bold;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        padding: 5px 0;
+    }
+    
+    .calendar-day-btn {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        color: var(--text-light);
+        border-radius: 6px;
+        padding: 10px 0;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    
+    .calendar-day-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--primary);
+    }
+    
+    .calendar-day-btn.holiday {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.6);
+        color: #f87171;
+    }
+    
+    .calendar-day-btn.holiday::after {
+        content: 'OFF';
+        position: absolute;
+        bottom: 2px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.55rem;
+        font-weight: 800;
+        color: #ef4444;
+    }
+    
+    .calendar-day-btn.other-month {
+        opacity: 0.25;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h2 class="fw-bold text-light mb-1">Shift & Attendance Settings</h2>
+            <p class="text-secondary mb-0">Configure organization working hours, weekly schedules, and calendar holidays.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center text-nowrap">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-clock me-2 text-primary"></i>Shift Configurations
+            </h5>
+            
+            <form method="POST" id="settings-form">
+                {% csrf_token %}
+                
+                {% if shifts %}
+                    <!-- Render hidden inputs for form validation compatibility -->
+                    <div style="display: none;">
+                        {{ form.check_in_time }}
+                        {{ form.check_out_time }}
+                    </div>
+                    
+                    {% for shift in shifts %}
+                        <div class="mb-4 p-3 rounded border border-secondary" style="background: rgba(255,255,255,0.02)">
+                            <h6 class="text-primary fw-bold mb-3"><i class="fas fa-clock me-2"></i>{{ shift.name }} Settings</h6>
+                            <div class="row g-3">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label text-secondary small fw-semibold">Start Time</label>
+                                    <input type="time" name="shift_{{ shift.id }}_start" value="{{ shift.start_time|time:'H:i' }}" class="form-control bg-dark text-light border-secondary" required>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label text-secondary small fw-semibold">End Time</label>
+                                    <input type="time" name="shift_{{ shift.id }}_end" value="{{ shift.end_time|time:'H:i' }}" class="form-control bg-dark text-light border-secondary" required>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="mb-4">
+                        <label class="form-label text-secondary small fw-semibold">Check-In Shift Time (Shift Start)</label>
+                        {{ form.check_in_time }}
+                        <small class="text-muted d-block mt-1">Employees clocking in after this time will be marked as LATE.</small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-secondary small fw-semibold">Check-Out Shift Time (Shift End)</label>
+                        {{ form.check_out_time }}
+                        <small class="text-muted d-block mt-1">Employees clocking out before this time will be marked as EARLY CHECK-OUT.</small>
+                    </div>
+                {% endif %}
+                
+                <div class="mb-4">
+                    <label class="form-label text-secondary small fw-semibold">Default Daily Salary (Base)</label>
+                    {{ form.default_daily_salary }}
+                    <small class="text-muted d-block mt-1">Configure the base daily pay rate for employees if not overridden individually.</small>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label text-secondary small fw-semibold">Default OT Hourly Rate</label>
+                    {{ form.default_ot_hourly_rate }}
+                    <small class="text-muted d-block mt-1">Configure the default hourly rate for overtime work if not overridden individually.</small>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label text-secondary small fw-semibold d-block mb-2">Weekly Working Schedule</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% for choice in form.working_days %}
+                            <div class="form-check">
+                                {{ choice.tag }}
+                                <label class="form-check-label text-light" for="{{ choice.id_for_label }}">
+                                    {{ choice.choice_label }}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <small class="text-muted d-block mt-2">Select the default working days for your weekly schedule.</small>
+                </div>
+                
+                {{ form.custom_holidays_json }}
+                
+                <div class="mt-4 border-top border-secondary pt-3">
+                    <button type="submit" class="btn btn-glow-primary w-100">
+                        <i class="fas fa-save me-2"></i>Save Shift Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-7">
+        <div class="glass-card p-4">
+            <h5 class="fw-bold text-light mb-3 pb-2 border-bottom border-secondary">
+                <i class="fas fa-calendar-alt me-2 text-secondary"></i>Holidays & Off-Days Calendar
+            </h5>
+            <p class="text-secondary small mb-4">Click on any date to toggle it as an **Off-Day/Holiday**. Toggled dates will exclude employees from attendance audits on those days.</p>
+            
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button type="button" id="prev-month-btn" class="btn btn-sm btn-outline-secondary"><i class="fas fa-chevron-left"></i></button>
+                    <h5 id="month-title" class="m-0 fw-bold text-light">Month Year</h5>
+                    <button type="button" id="next-month-btn" class="btn btn-sm btn-outline-secondary"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                
+                <div class="calendar-grid">
+                    <div class="calendar-day-label">Sun</div>
+                    <div class="calendar-day-label">Mon</div>
+                    <div class="calendar-day-label">Tue</div>
+                    <div class="calendar-day-label">Wed</div>
+                    <div class="calendar-day-label">Thu</div>
+                    <div class="calendar-day-label">Fri</div>
+                    <div class="calendar-day-label">Sat</div>
+                </div>
+                
+                <div id="calendar-days-grid" class="calendar-grid mt-2">
+                    <!-- Days loaded dynamically by javascript -->
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                <span id="holidays-count-label" class="text-secondary small">0 custom holidays configured</span>
+                <button type="button" id="clear-holidays-btn" class="btn btn-sm btn-outline-danger text-nowrap">
+                    <i class="fas fa-trash-alt me-1"></i>Reset All Holidays
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const holidaysInput = document.getElementById('id_custom_holidays_json');
+        const monthTitle = document.getElementById('month-title');
+        const daysGrid = document.getElementById('calendar-days-grid');
+        const prevBtn = document.getElementById('prev-month-btn');
+        const nextBtn = document.getElementById('next-month-btn');
+        const countLabel = document.getElementById('holidays-count-label');
+        const clearBtn = document.getElementById('clear-holidays-btn');
+
+        // Load initially configured holidays
+        let customHolidays = [];
+        try {
+            customHolidays = JSON.parse(holidaysInput.value || '[]');
+        } catch (e) {
+            customHolidays = [];
+        }
+
+        let currentDate = new Date();
+        let displayMonth = currentDate.getMonth();
+        let displayYear = currentDate.getFullYear();
+
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June", 
+            "July", "August", "September", "October", "November", "December"
+        ];
+
+        function renderCalendar() {
+            daysGrid.innerHTML = '';
+            monthTitle.textContent = `${monthNames[displayMonth]} ${displayYear}`;
+
+            // First day of display month
+            const firstDayIndex = new Date(displayYear, displayMonth, 1).getDay();
+            // Total days in display month
+            const totalDays = new Date(displayYear, displayMonth + 1, 0).getDate();
+
+            // Populate padding days (previous month)
+            for (let i = 0; i < firstDayIndex; i++) {
+                const padCell = document.createElement('div');
+                padCell.className = 'calendar-day-btn other-month';
+                padCell.textContent = '';
+                daysGrid.appendChild(padCell);
+            }
+
+            // Populate month days
+            for (let day = 1; day <= totalDays; day++) {
+                const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'calendar-day-btn';
+                btn.textContent = day;
+                btn.dataset.date = dateStr;
+
+                if (customHolidays.includes(dateStr)) {
+                    btn.classList.add('holiday');
+                }
+
+                btn.addEventListener('click', () => {
+                    if (customHolidays.includes(dateStr)) {
+                        customHolidays = customHolidays.filter(d => d !== dateStr);
+                        btn.classList.remove('holiday');
+                    } else {
+                        customHolidays.push(dateStr);
+                        btn.classList.add('holiday');
+                    }
+                    updateHolidaysInput();
+                });
+
+                daysGrid.appendChild(btn);
+            }
+            updateCountLabel();
+        }
+
+        function updateHolidaysInput() {
+            holidaysInput.value = JSON.stringify(customHolidays);
+            updateCountLabel();
+        }
+
+        function updateCountLabel() {
+            countLabel.textContent = `${customHolidays.length} custom holidays configured`;
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (displayMonth === 0) {
+                displayMonth = 11;
+                displayYear--;
+            } else {
+                displayMonth--;
+            }
+            renderCalendar();
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (displayMonth === 11) {
+                displayMonth = 0;
+                displayYear++;
+            } else {
+                displayMonth++;
+            }
+            renderCalendar();
+        });
+
+        clearBtn.addEventListener('click', () => {
+            if (confirm("Are you sure you want to clear all custom holiday dates?")) {
+                customHolidays = [];
+                updateHolidaysInput();
+                renderCalendar();
+            }
+        });
+
+        renderCalendar();
+    });
+</script>
+{% endblock %}

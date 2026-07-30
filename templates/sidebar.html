@@ -1,0 +1,410 @@
+{% load static %}
+<div class="sidebar d-flex flex-column p-3 text-light" style="width: 260px; height: 100dvh; position: fixed; left: 0; top: 0; background: var(--bg-secondary); border-right: 1px solid var(--glass-border); z-index: 1040 !important; transition: var(--transition);">
+    <div class="d-flex align-items-center gap-2 mb-4 px-2">
+        {% if request.user.get_organization_logo_url %}
+            <img src="{{ request.user.get_organization_logo_url }}" alt="Logo" class="rounded-circle border border-primary p-0.5" style="width: 40px; height: 40px; object-fit: cover;">
+        {% else %}
+            <i class="fas fa-fingerprint text-primary" style="font-size: 2rem; text-shadow: 0 0 10px var(--primary-glow);"></i>
+        {% endif %}
+        <div class="flex-grow-1 min-w-0">
+            <h5 class="m-0 fw-bold tracking-tight text-light text-truncate">{{ request.user.get_organization_name }}</h5>
+            <small style="color: var(--text-secondary); opacity: 0.8;">Biometric System</small>
+        </div>
+        <!-- Close Button for Mobile -->
+        <button class="btn text-light sidebar-close-btn p-1 ms-2 border-0 bg-transparent" id="sidebar-close-btn" aria-label="Close Sidebar">
+            <i class="fas fa-times" style="font-size: 1.2rem;"></i>
+        </button>
+    </div>
+
+    <hr class="border-secondary mt-0">
+
+    <div class="nav-links flex-grow-1 overflow-y-auto pr-1">
+        <ul class="nav nav-pills flex-column mb-auto gap-1">
+            <!-- COMMON HOME/DASHBOARD DISPATCHER -->
+            <li class="nav-item">
+                <a href="{% url 'dashboards:dispatcher' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded" style="transition: var(--transition);">
+                    <i class="fas fa-chart-pie text-secondary" style="width: 20px;"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <!-- SUPER ADMIN VIEWS -->
+            {% if request.user.role == 'SUPER_ADMIN' %}
+                <div class="text-uppercase fw-bold mt-3 mb-2 px-3" style="font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary); opacity: 0.85;">Administration</div>
+                <li>
+                    <a href="{% url 'super_admin:admin_list' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-users-cog text-secondary" style="width: 20px;"></i>
+                        <span>Admin Management</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'departments:list' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-sitemap text-secondary" style="width: 20px;"></i>
+                        <span>Departments</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'super_admin:company_list' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-building text-secondary" style="width: 20px;"></i>
+                        <span>Company Profile</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'super_admin:review_limit_requests' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-key text-secondary" style="width: 20px;"></i>
+                        <span>Slot Requests</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'super_admin:settings' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-sliders-h text-secondary" style="width: 20px;"></i>
+                        <span>System Settings</span>
+                    </a>
+                </li>
+            {% endif %}
+
+            <!-- ADMIN VIEWS -->
+            {% if request.user.role == 'ADMIN' %}
+                <div class="text-uppercase fw-bold mt-3 mb-2 px-3" style="font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary); opacity: 0.85;">Staff Controls</div>
+                <li>
+                    <a href="{% url 'employee_management:employee_list' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-user-tie text-secondary" style="width: 20px;"></i>
+                        <span>Employee Records</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'departments:list' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-sitemap text-secondary" style="width: 20px;"></i>
+                        <span>Departments</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'biometric:biometric_logs' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-fingerprint text-secondary" style="width: 20px;"></i>
+                        <span>Biometrics Logs</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'attendance:attendance_logs' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-calendar-check text-secondary" style="width: 20px;"></i>
+                        <span>Attendance Tracker</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'leave_management:leave_requests' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-envelope-open-text text-secondary" style="width: 20px;"></i>
+                        <span>Leave Requests</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'reports:attendance_report' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-file-invoice text-secondary" style="width: 20px;"></i>
+                        <span>Admin Reports</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'attendance:attendance_settings' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-sliders-h text-secondary" style="width: 20px;"></i>
+                        <span>Attendance Settings</span>
+                    </a>
+                </li>
+            {% endif %}
+
+            <!-- EMPLOYEE VIEWS -->
+            {% if request.user.role == 'EMPLOYEE' %}
+                <div class="text-uppercase fw-bold mt-3 mb-2 px-3" style="font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary); opacity: 0.85;">Self-Service</div>
+                <li>
+                    <a href="{% url 'attendance:check_in' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-sign-in-alt text-secondary" style="width: 20px;"></i>
+                        <span>Check In</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'attendance:check_out' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-sign-out-alt text-secondary" style="width: 20px;"></i>
+                        <span>Check Out</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'attendance:ot_check_in' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-business-time text-secondary" style="width: 20px;"></i>
+                        <span>OT Check In</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'attendance:ot_check_out' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-business-time text-secondary" style="width: 20px;"></i>
+                        <span>OT Check Out</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'attendance:history' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-history text-secondary" style="width: 20px;"></i>
+                        <span>Attendance Logs</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'leave_management:apply_leave' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-paper-plane text-secondary" style="width: 20px;"></i>
+                        <span>Apply Leave</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'leave_management:leave_history' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-clipboard-list text-secondary" style="width: 20px;"></i>
+                        <span>Leave History</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'reports:employee_report' %}" class="nav-link text-light d-flex align-items-center gap-3 py-2 px-3 rounded">
+                        <i class="fas fa-cloud-download-alt text-secondary" style="width: 20px;"></i>
+                        <span>Download Reports</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <hr class="border-secondary mt-3">
+    
+    <div class="px-2">
+        <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
+            <i class="fas fa-power-off"></i>
+            <span>Log Out</span>
+        </a>
+    </div>
+</div>
+
+<style>
+    /* Responsive styling for sidebars */
+    @media (max-width: 1024.98px) {
+        .sidebar {
+            left: -260px !important;
+            display: none !important;
+        }
+        .sidebar.active {
+            left: 0 !important;
+            display: flex !important;
+        }
+    }
+    /* Unique Active States for Sidebar Navigation */
+    .sidebar .nav-link:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    /* 1. Dashboard - Blue */
+    .sidebar .nav-link.active[data-active-type="dashboard"] {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+        color: #fff !important;
+    }
+    .sidebar .nav-link.active[data-active-type="dashboard"] i {
+        color: #fff !important;
+    }
+    .sidebar .nav-link:hover[data-link-type="dashboard"] { color: #3b82f6 !important; }
+    .sidebar .nav-link:hover[data-link-type="dashboard"] i { color: #3b82f6 !important; }
+
+    /* 2. Employee Records - Green */
+    .sidebar .nav-link.active[data-active-type="employee records"] {
+        background: linear-gradient(135deg, #10b981, #047857) !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+        color: #fff !important;
+    }
+    .sidebar .nav-link.active[data-active-type="employee records"] i {
+        color: #fff !important;
+    }
+    .sidebar .nav-link:hover[data-link-type="employee records"] { color: #10b981 !important; }
+    .sidebar .nav-link:hover[data-link-type="employee records"] i { color: #10b981 !important; }
+
+    /* 3. Departments - Purple/Indigo */
+    .sidebar .nav-link.active[data-active-type="departments"] {
+        background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4) !important;
+        color: #fff !important;
+    }
+    .sidebar .nav-link.active[data-active-type="departments"] i {
+        color: #fff !important;
+    }
+    .sidebar .nav-link:hover[data-link-type="departments"] { color: #8b5cf6 !important; }
+    .sidebar .nav-link:hover[data-link-type="departments"] i { color: #8b5cf6 !important; }
+
+    /* 4. Biometrics Logs - Pink/Magenta */
+    .sidebar .nav-link.active[data-active-type="biometrics logs"] {
+        background: linear-gradient(135deg, #ec4899, #be185d) !important;
+        box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4) !important;
+        color: #fff !important;
+    }
+    .sidebar .nav-link.active[data-active-type="biometrics logs"] i {
+        color: #fff !important;
+    }
+    .sidebar .nav-link:hover[data-link-type="biometrics logs"] { color: #ec4899 !important; }
+    .sidebar .nav-link:hover[data-link-type="biometrics logs"] i { color: #ec4899 !important; }
+
+    /* 5. Attendance Tracker / Logs - Orange/Amber */
+    .sidebar .nav-link.active[data-active-type="attendance tracker"],
+    .sidebar .nav-link.active[data-active-type="attendance logs"] {
+        background: linear-gradient(135deg, #f59e0b, #b45309) !important;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4) !important;
+        color: #fff !important;
+    }
+    .sidebar .nav-link.active[data-active-type="attendance tracker"] i,
+    .sidebar .nav-link.active[data-active-type="attendance logs"] i {
+        color: #fff !important;
+    }
+    .sidebar .nav-link:hover[data-link-type="attendance tracker"] { color: #f59e0b !important; }
+    .sidebar .nav-link:hover[data-link-type="attendance tracker"] i { color: #f59e0b !important; }
+    .sidebar .nav-link:hover[data-link-type="attendance logs"] { color: #f59e0b !important; }
+    .sidebar .nav-link:hover[data-link-type="attendance logs"] i { color: #f59e0b !important; }
+
+    /* 6. Leave Requests / Apply Leave / Leave History - Cyan */
+    .sidebar .nav-link.active[data-active-type="leave requests"],
+    .sidebar .nav-link.active[data-active-type="apply leave"],
+    .sidebar .nav-link.active[data-active-type="leave history"] {
+        background: linear-gradient(135deg, #06b6d4, #0369a1) !important;
+        box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4) !important;
+        color: #fff !important;
+    }
+    .sidebar .nav-link.active[data-active-type="leave requests"] i,
+    .sidebar .nav-link.active[data-active-type="apply leave"] i,
+    .sidebar .nav-link.active[data-active-type="leave history"] i {
+        color: #fff !important;
+    }
+    .sidebar .nav-link:hover[data-link-type="leave requests"] { color: #06b6d4 !important; }
+    .sidebar .nav-link:hover[data-link-type="leave requests"] i { color: #06b6d4 !important; }
+    .sidebar .nav-link:hover[data-link-type="apply leave"] { color: #06b6d4 !important; }
+    .sidebar .nav-link:hover[data-link-type="apply leave"] i { color: #06b6d4 !important; }
+    .sidebar .nav-link:hover[data-link-type="leave history"] { color: #06b6d4 !important; }
+    .sidebar .nav-link:hover[data-link-type="leave history"] i { color: #06b6d4 !important; }
+
+    /* 7. Admin Reports / Download Reports - Teal */
+    .sidebar .nav-link.active[data-active-type="admin reports"],
+    .sidebar .nav-link.active[data-active-type="download reports"] {
+        background: linear-gradient(135deg, #14b8a6, #0f766e) !important;
+        box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4) !important;
+        color: #fff !important;
+    }
+    .sidebar .nav-link.active[data-active-type="admin reports"] i,
+    .sidebar .nav-link.active[data-active-type="download reports"] i {
+        color: #fff !important;
+    }
+    .sidebar .nav-link:hover[data-link-type="admin reports"] { color: #14b8a6 !important; }
+    .sidebar .nav-link:hover[data-link-type="admin reports"] i { color: #14b8a6 !important; }
+    .sidebar .nav-link:hover[data-link-type="download reports"] { color: #14b8a6 !important; }
+    .sidebar .nav-link:hover[data-link-type="download reports"] i { color: #14b8a6 !important; }
+
+    /* 8. Attendance Settings / System Settings / Slot Requests - Rose/Red */
+    .sidebar .nav-link.active[data-active-type="attendance settings"],
+    .sidebar .nav-link.active[data-active-type="system settings"],
+    .sidebar .nav-link.active[data-active-type="slot requests"],
+    .sidebar .nav-link.active[data-active-type="admin management"] {
+        background: linear-gradient(135deg, #f43f5e, #be123c) !important;
+        box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4) !important;
+        color: #fff !important;
+    }
+    .sidebar .nav-link.active[data-active-type="attendance settings"] i,
+    .sidebar .nav-link.active[data-active-type="system settings"] i,
+    .sidebar .nav-link.active[data-active-type="slot requests"] i,
+    .sidebar .nav-link.active[data-active-type="admin management"] i {
+        color: #fff !important;
+    }
+    .sidebar .nav-link:hover[data-link-type="attendance settings"] { color: #f43f5e !important; }
+    .sidebar .nav-link:hover[data-link-type="attendance settings"] i { color: #f43f5e !important; }
+    .sidebar .nav-link:hover[data-link-type="system settings"] { color: #f43f5e !important; }
+    .sidebar .nav-link:hover[data-link-type="system settings"] i { color: #f43f5e !important; }
+    .sidebar .nav-link:hover[data-link-type="slot requests"] { color: #f43f5e !important; }
+    .sidebar .nav-link:hover[data-link-type="slot requests"] i { color: #f43f5e !important; }
+    .sidebar .nav-link:hover[data-link-type="admin management"] { color: #f43f5e !important; }
+    .sidebar .nav-link:hover[data-link-type="admin management"] i { color: #f43f5e !important; }
+
+    /* 9. Employee Self Service: Check In / Check Out - Emerald/Green */
+    .sidebar .nav-link.active[data-active-type="check in"],
+    .sidebar .nav-link.active[data-active-type="check out"],
+    .sidebar .nav-link.active[data-active-type="ot check in"],
+    .sidebar .nav-link.active[data-active-type="ot check out"] {
+        background: linear-gradient(135deg, #10b981, #047857) !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+        color: #fff !important;
+    }
+    .sidebar .nav-link.active[data-active-type="check in"] i,
+    .sidebar .nav-link.active[data-active-type="check out"] i,
+    .sidebar .nav-link.active[data-active-type="ot check in"] i,
+    .sidebar .nav-link.active[data-active-type="ot check out"] i {
+        color: #fff !important;
+    }
+    .sidebar .nav-link:hover[data-link-type="check in"] { color: #10b981 !important; }
+    .sidebar .nav-link:hover[data-link-type="check in"] i { color: #10b981 !important; }
+    .sidebar .nav-link:hover[data-link-type="check out"] { color: #10b981 !important; }
+    .sidebar .nav-link:hover[data-link-type="check out"] i { color: #10b981 !important; }
+    .sidebar .nav-link:hover[data-link-type="ot check in"] { color: #10b981 !important; }
+    .sidebar .nav-link:hover[data-link-type="ot check in"] i { color: #10b981 !important; }
+    .sidebar .nav-link:hover[data-link-type="ot check out"] { color: #10b981 !important; }
+    .sidebar .nav-link:hover[data-link-type="ot check out"] i { color: #10b981 !important; }
+
+    /* Sleek custom scrollbars for sidebar navigation links */
+    .sidebar .nav-links::-webkit-scrollbar {
+        width: 4px;
+    }
+    .sidebar .nav-links::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+    .sidebar .nav-links::-webkit-scrollbar-track {
+        background: transparent;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const sidebar = document.querySelector('.sidebar');
+        const closeBtn = document.getElementById('sidebar-close-btn');
+        const mainContent = document.getElementById('main-content');
+
+        if (sidebar && closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+            });
+        }
+
+        // Close sidebar when clicking outside on mobile
+        if (sidebar && mainContent) {
+            mainContent.addEventListener('click', (e) => {
+                if (e.target.closest('#sidebar-toggle')) {
+                    return;
+                }
+                if (window.innerWidth < 992 && sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                }
+            });
+        }
+
+        // Dynamic sidebar active state and type attribute injection
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.sidebar .nav-link');
+
+        navLinks.forEach(link => {
+            const textSpan = link.querySelector('span');
+            if (!textSpan) return;
+            const text = textSpan.textContent.trim().toLowerCase();
+            link.dataset.linkType = text;
+
+            const href = link.getAttribute('href');
+            if (!href) return;
+
+            // Strict matching rules for home dispatcher vs other view subpaths
+            const isDashboard = href === '/' || href.includes('/dashboard/');
+            let isMatch = false;
+
+            if (isDashboard) {
+                isMatch = currentPath === '/' || currentPath.startsWith('/dashboard/');
+            } else {
+                isMatch = currentPath.startsWith(href);
+            }
+
+            if (isMatch) {
+                link.classList.add('active');
+                link.dataset.activeType = text;
+            }
+        });
+    });
+</script>

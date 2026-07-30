@@ -1,0 +1,627 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %}Register Employee | Biometric Attendance System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<style>
+    .camera-controls-row {
+        background: rgba(31, 41, 55, 0.4);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .scanner-target.verified {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.6) !important;
+    }
+    
+    .scanner-target.verified::before {
+        background: #10b981 !important;
+        box-shadow: 0 0 10px #10b981 !important;
+    }
+    
+    .scanning-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #6b7280;
+        display: inline-block;
+        margin-right: 5px;
+        animation: pulseRed 1s infinite alternate;
+    }
+    
+    @keyframes pulseRed {
+        from { opacity: 0.4; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1.1); }
+    }
+    
+    .scanning-dot.active {
+        background-color: #10b981;
+        animation: pulseGreen 1s infinite alternate;
+    }
+    
+    @keyframes pulseGreen {
+        from { opacity: 0.4; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1.1); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2 class="fw-bold text-light">Register New Employee</h2>
+        <p class="text-secondary">Register account credentials, details, and documents for a new hire.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="glass-card p-3 p-sm-4">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-user-plus me-2 text-primary"></i>Employee Application Form
+            </h5>
+            
+            <form method="POST" enctype="multipart/form-data" id="add-employee-form" autocomplete="off">
+                {% csrf_token %}
+                
+                <h6 class="text-primary fw-bold mb-3">1. Authentication Credentials</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Username</label>
+                        {{ form.username }}
+                        {{ form.username.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Password</label>
+                        {{ form.password }}
+                        {{ form.password.errors }}
+                    </div>
+                </div>
+                
+                <h6 class="text-primary fw-bold mb-3">2. Personal Information</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">First Name</label>
+                        {{ form.first_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Last Name</label>
+                        {{ form.last_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Email Address</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Phone Number</label>
+                        {{ form.phone_number }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Gender</label>
+                        {{ form.gender }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Date of Birth</label>
+                        {{ form.date_of_birth }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label text-secondary">Current Address</label>
+                        {{ form.current_address }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label text-secondary">Permanent Address</label>
+                        {{ form.permanent_address }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-secondary">City</label>
+                        {{ form.city }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-secondary">State</label>
+                        {{ form.state }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-secondary">Pincode</label>
+                        {{ form.pincode }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Country</label>
+                        {{ form.country }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Nationality</label>
+                        {{ form.nationality }}
+                    </div>
+                </div>
+
+                <h6 class="text-primary fw-bold mb-3">3. Employment Parameters</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Employee ID (Unique)</label>
+                        {{ form.employee_id }}
+                        {{ form.employee_id.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Department</label>
+                        {{ form.department }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Designation</label>
+                        {{ form.designation }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Date of Joining</label>
+                        {{ form.date_of_joining }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Employee Status</label>
+                        <select name="status" class="form-select bg-dark text-light border-secondary" id="id_status">
+                            <option value="ACTIVE" {% if form.status.value == 'ACTIVE' %}selected{% endif %}>Active</option>
+                            <option value="INACTIVE" {% if form.status.value == 'INACTIVE' %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Assigned Shift Slot</label>
+                        {{ form.shift }}
+                        {{ form.shift.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Custom Check-In Time (Optional)</label>
+                        {{ form.custom_check_in_time }}
+                        {{ form.custom_check_in_time.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Custom Check-Out Time (Optional)</label>
+                        {{ form.custom_check_out_time }}
+                        {{ form.custom_check_out_time.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Contract / Document</label>
+                        <input type="file" name="document" class="form-control bg-dark text-light border-secondary" id="id_document">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Profile Image (Optional)</label>
+                        <input type="file" name="profile_image" class="form-control bg-dark text-light border-secondary" id="id_profile_image">
+                        {{ form.profile_image.errors }}
+                    </div>
+                </div>
+
+                <h6 class="text-primary fw-bold mb-3 mt-4">4. Biometric Face Registration (Mandatory)</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-12">
+                        <p class="text-secondary small mb-3">The camera will start to capture **10 live face samples** in real-time. Biometric registration is mandatory to complete employee account registration.</p>
+                        
+                        <div class="webcam-panel mx-auto mb-3" style="max-width: 400px; background-color: #0b0f19; position: relative;">
+                            <video id="webcam-view" class="webcam-video" autoplay playsinline></video>
+                            <div class="webcam-overlay">
+                                <div id="scanner-ring" class="scanner-target" style="width: 150px; height: 150px;"></div>
+                                <!-- High-tech Dynamic Tracking Box Overlay -->
+                                <div id="face-bounding-box" style="position: absolute; border: 2px solid #10b981; display: none; border-radius: 6px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); pointer-events: none; transition: all 0.08s ease-out; z-index: 15;">
+                                    <div style="position: absolute; top: -5px; left: -5px; width: 10px; height: 10px; border-top: 3px solid #10b981; border-left: 3px solid #10b981;"></div>
+                                    <div style="position: absolute; top: -5px; right: -5px; width: 10px; height: 10px; border-top: 3px solid #10b981; border-right: 3px solid #10b981;"></div>
+                                    <div style="position: absolute; bottom: -5px; left: -5px; width: 10px; height: 10px; border-bottom: 3px solid #10b981; border-left: 3px solid #10b981;"></div>
+                                    <div style="position: absolute; bottom: -5px; right: -5px; width: 10px; height: 10px; border-bottom: 3px solid #10b981; border-right: 3px solid #10b981;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Camera Control Panel -->
+                        <div id="camera-controls-panel" class="camera-controls-row mx-auto mb-3" style="max-width: 400px; display: none;">
+                            <label class="text-secondary small fw-semibold me-1"><i class="fas fa-video me-1"></i>Device:</label>
+                            <select id="camera-select" class="form-select form-select-sm bg-dark text-light border-secondary" style="width: auto; max-width: 200px;"></select>
+                            <button type="button" id="camera-toggle-btn" class="btn btn-sm btn-outline-danger ms-1">
+                                <i class="fas fa-video-slash me-1"></i>Stop Camera
+                            </button>
+                        </div>
+                        
+                        <!-- Progress Indicator -->
+                        <div id="capture-progress" class="mb-3 text-center" style="display: none;">
+                            <div class="progress bg-dark border border-secondary" style="height: 10px; max-width: 320px; margin: 0 auto 5px auto; border-radius: 5px;">
+                                <div id="progress-bar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <span id="progress-text" class="text-secondary small">0 of 10 samples captured</span>
+                        </div>
+                        
+                        <div id="status-container" class="webcam-status-text text-center mx-auto d-flex align-items-center justify-content-center gap-2" style="max-width: 400px;">
+                            <span id="scan-dot" class="scanning-dot"></span>
+                            <span id="status-text">Camera offline.</span>
+                        </div>
+                        
+                        {% if face_error %}
+                            <div class="alert alert-danger mt-3 text-center mx-auto" style="max-width: 400px;" id="face-error-alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>{{ face_error }}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mt-3 text-center">
+                            <!-- Main Start Scan Button -->
+                            <button type="button" id="start-scan-btn" class="btn btn-glow-primary px-4">
+                                <i class="fas fa-video me-2"></i>Start Biometric Scan
+                            </button>
+                            <!-- Secondary reset/redo buttons -->
+                            <button type="button" id="reset-scan-btn" class="btn btn-sm btn-outline-warning px-3" style="display: none; margin-left: 0.5rem;">
+                                <i class="fas fa-redo me-1"></i>Scan Again
+                            </button>
+                        </div>
+                        
+                        <input type="hidden" name="face_images" id="face-images-input" value="">
+                        
+                        <!-- Thumbnail Preview -->
+                        <div id="captured-preview-container" class="mt-3 text-center" style="display: none;">
+                            <span class="text-success d-block mb-2 fw-semibold"><i class="fas fa-check-circle me-1"></i>All face samples registered!</span>
+                            <img id="captured-preview" src="" style="max-width: 120px; border-radius: 10px; border: 2px solid #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 d-flex flex-wrap gap-2 border-top border-secondary pt-3">
+                    <button type="submit" class="btn btn-glow-primary d-inline-flex align-items-center justify-content-center" id="submit-btn">
+                        <i class="fas fa-user-plus me-2"></i>Register Employee
+                    </button>
+                    <a href="{% url 'employee_management:employee_list' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const video = document.getElementById('webcam-view');
+        const cameraSelect = document.getElementById('camera-select');
+        const cameraToggleBtn = document.getElementById('camera-toggle-btn');
+        const cameraControlsPanel = document.getElementById('camera-controls-panel');
+        const statusText = document.getElementById('status-text');
+        const scanDot = document.getElementById('scan-dot');
+        const startScanBtn = document.getElementById('start-scan-btn');
+        const resetScanBtn = document.getElementById('reset-scan-btn');
+        const faceImagesInput = document.getElementById('face-images-input');
+        const previewContainer = document.getElementById('captured-preview-container');
+        const previewImg = document.getElementById('captured-preview');
+        const faceErrorAlert = document.getElementById('face-error-alert');
+        const form = document.getElementById('add-employee-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const scannerRing = document.getElementById('scanner-ring');
+        const faceBox = document.getElementById('face-bounding-box');
+        
+        // Progress elements
+        const progressContainer = document.getElementById('capture-progress');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+
+        let currentStream = null;
+        let isCameraOn = false;
+        let scanTimer = null;
+        let isChecking = false;
+        let isVerified = false;
+        
+        const TOTAL_SAMPLES = 10;
+        let capturedSamples = [];
+
+        // Function to start camera
+        async function startCamera(deviceId = null) {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            
+            const constraints = {
+                audio: false,
+                video: deviceId ? { deviceId: { exact: deviceId }, width: 640, height: 480 } 
+                                : { width: 640, height: 480, facingMode: "user" }
+            };
+            
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
+                await video.play();
+                isCameraOn = true;
+                
+                // Show controls panel
+                cameraControlsPanel.style.display = 'flex';
+                return true;
+            } catch (err) {
+                console.error("Camera access error:", err);
+                isCameraOn = false;
+                throw err;
+            }
+        }
+
+        // Initialize and load camera devices list
+        async function initWebcamSetup() {
+            statusText.textContent = "Connecting camera...";
+            scanDot.style.backgroundColor = "#ef4444";
+            
+            try {
+                await navigator.mediaDevices.getUserMedia({ video: true });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                cameraSelect.innerHTML = '';
+                if (videoDevices.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.text = "No cameras found";
+                    cameraSelect.appendChild(opt);
+                    statusText.textContent = "No camera devices detected.";
+                    scanDot.style.backgroundColor = "#ef4444";
+                    return;
+                }
+                
+                videoDevices.forEach((device, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = device.deviceId;
+                    opt.text = device.label || `Camera ${index + 1}`;
+                    cameraSelect.appendChild(opt);
+                });
+                
+                await startCamera(videoDevices[0].deviceId);
+                statusText.textContent = "Camera ready. Click 'Start Biometric Scan' to begin.";
+                scanDot.className = "scanning-dot";
+                scanDot.style.backgroundColor = "#3b82f6"; // Blue dot for camera ready state
+                startScanBtn.innerHTML = '<i class="fas fa-play me-2"></i>Start Biometric Scan';
+                startScanBtn.style.display = 'inline-block';
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = "Failed to access webcam. Please check settings.";
+                scanDot.className = "scanning-dot";
+                scanDot.style.backgroundColor = "#ef4444";
+                startScanBtn.innerHTML = '<i class="fas fa-video me-2"></i>Start Biometric Scan';
+                startScanBtn.style.display = 'inline-block';
+            }
+        }
+
+        // Auto start camera on page load
+        (async () => {
+            await initWebcamSetup();
+        })();
+
+        // Start scan button manual fallback / capture trigger
+        startScanBtn.addEventListener('click', async () => {
+            if (isCameraOn && !isVerified && !scanTimer) {
+                startScanBtn.style.display = 'none';
+                startRealTimeScanner();
+                statusText.textContent = "Scanning... Position your face inside the circle.";
+                statusText.parentElement.className = "webcam-status-text text-center mx-auto d-flex align-items-center justify-content-center gap-2";
+                scanDot.className = "scanning-dot active";
+            } else if (!isCameraOn) {
+                startScanBtn.style.display = 'none';
+                await initWebcamSetup();
+            }
+        });
+
+        // Switch camera handler
+        cameraSelect.addEventListener('change', async () => {
+            const deviceId = cameraSelect.value;
+            if (deviceId) {
+                stopRealTimeScanner();
+                statusText.textContent = "Switching camera...";
+                scanDot.className = "scanning-dot";
+                scanDot.style.backgroundColor = "#ef4444";
+                try {
+                    await startCamera(deviceId);
+                    cameraToggleBtn.innerHTML = '<i class="fas fa-video-slash me-1"></i>Stop Camera';
+                    cameraToggleBtn.className = "btn btn-sm btn-outline-danger ms-1";
+                } catch (err) {
+                    statusText.textContent = "Failed to start selected camera.";
+                }
+            }
+        });
+
+        // Toggle camera power handler
+        cameraToggleBtn.addEventListener('click', () => {
+            if (isCameraOn) {
+                shutdownCamera();
+                statusText.textContent = "Camera stopped.";
+                scanDot.className = "scanning-dot";
+                scanDot.style.backgroundColor = "#6b7280";
+                
+                // Show the start scan button again
+                cameraControlsPanel.style.display = 'none';
+                startScanBtn.style.display = 'inline-block';
+            }
+        });
+        
+        // Helper to turn off camera stream completely
+        function shutdownCamera() {
+            stopRealTimeScanner();
+            if (faceBox) {
+                faceBox.style.display = 'none';
+            }
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                currentStream = null;
+            }
+            isCameraOn = false;
+        }
+
+        // Snap logic (downscaled to 320x240 for extreme performance and low bandwidth)
+        function snapFrame() {
+            if (!isCameraOn) return null;
+            const canvas = document.createElement('canvas');
+            canvas.width = 320;
+            canvas.height = 240;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', 0.85);
+        }
+
+        // Perform face validation request
+        async function checkFaceFrame() {
+            if (isChecking || !isCameraOn || isVerified) return;
+            isChecking = true;
+            
+            scanDot.className = "scanning-dot active"; // turn green/active pulsing
+            
+            const base64 = snapFrame();
+            if (!base64) {
+                isChecking = false;
+                return;
+            }
+            
+            try {
+                const response = await fetch("{% url 'biometric:detect_face_api' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ image: base64 })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && !isVerified) {
+                    capturedSamples.push(base64);
+                    
+                    // Show progress bar
+                    progressContainer.style.display = 'block';
+                    const percent = Math.round((capturedSamples.length / TOTAL_SAMPLES) * 100);
+                    progressBar.style.width = percent + "%";
+                    progressBar.setAttribute('aria-valuenow', percent);
+                    progressText.textContent = `${capturedSamples.length} of ${TOTAL_SAMPLES} samples captured`;
+                    
+                    // Draw bounding box if returned
+                    if (data.bbox) {
+                        const videoWidth = 320;
+                        const videoHeight = 240;
+                        const displayWidth = video.clientWidth;
+                        const displayHeight = video.clientHeight;
+                        
+                        const scaleX = displayWidth / videoWidth;
+                        const scaleY = displayHeight / videoHeight;
+                        
+                        // Mirrored X translation mapping
+                        const displayX = (videoWidth - data.bbox.x - data.bbox.w) * scaleX;
+                        const displayY = data.bbox.y * scaleY;
+                        
+                        faceBox.style.left = displayX + 'px';
+                        faceBox.style.top = displayY + 'px';
+                        faceBox.style.width = (data.bbox.w * scaleX) + 'px';
+                        faceBox.style.height = (data.bbox.h * scaleY) + 'px';
+                        faceBox.style.display = 'block';
+                    } else {
+                        faceBox.style.display = 'none';
+                    }
+                    
+                    if (capturedSamples.length === TOTAL_SAMPLES) {
+                        isVerified = true;
+                        faceBox.style.display = 'none';
+                        shutdownCamera(); // Turn camera off once complete
+                        
+                        cameraControlsPanel.style.display = 'none';
+                        
+                        // Store the array of samples as a JSON string
+                        faceImagesInput.value = JSON.stringify(capturedSamples);
+                        previewImg.src = capturedSamples[0];
+                        previewContainer.style.display = 'block';
+                        
+                        // Update layout visuals
+                        scannerRing.classList.add('verified');
+                        statusText.textContent = `All ${TOTAL_SAMPLES} face templates verified & locked!`;
+                        statusText.parentElement.className = "webcam-status-text text-center mx-auto d-flex align-items-center justify-content-center gap-2 text-success fw-bold";
+                        scanDot.className = "scanning-dot active";
+                        
+                        resetScanBtn.style.display = 'inline-block';
+                        
+                        if (faceErrorAlert) {
+                            faceErrorAlert.style.display = 'none';
+                        }
+                    } else {
+                        statusText.textContent = `Captured sample ${capturedSamples.length} of ${TOTAL_SAMPLES}... Turn head slightly.`;
+                        scanDot.className = "scanning-dot active";
+                    }
+                } else if (!isVerified) {
+                    faceBox.style.display = 'none';
+                    statusText.textContent = "Scanning... " + data.message;
+                    scanDot.className = "scanning-dot"; // reset to red pulsing
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                isChecking = false;
+            }
+        }
+
+        // Start background interval scanner (500ms for fast tracking responsiveness)
+        function startRealTimeScanner() {
+            stopRealTimeScanner();
+            scanTimer = setInterval(checkFaceFrame, 500);
+        }
+
+        // Stop background scanner
+        function stopRealTimeScanner() {
+            if (scanTimer) {
+                clearInterval(scanTimer);
+                scanTimer = null;
+            }
+        }
+
+        // Reset and scan again
+        resetScanBtn.addEventListener('click', async () => {
+            if (faceBox) {
+                faceBox.style.display = 'none';
+            }
+            isVerified = false;
+            capturedSamples = [];
+            faceImagesInput.value = '';
+            previewContainer.style.display = 'none';
+            scannerRing.classList.remove('verified');
+            
+            // Reset progress bar
+            progressContainer.style.display = 'none';
+            progressBar.style.width = "0%";
+            progressBar.setAttribute('aria-valuenow', 0);
+            progressText.textContent = `0 of ${TOTAL_SAMPLES} samples captured`;
+            
+            resetScanBtn.style.display = 'none';
+            
+            statusText.textContent = "Starting camera...";
+            statusText.parentElement.className = "webcam-status-text text-center mx-auto d-flex align-items-center justify-content-center gap-2";
+            
+            await initWebcamSetup();
+        });
+
+        // Enforce biometric registration before form submission
+        form.addEventListener('submit', (e) => {
+            if (!isVerified) {
+                e.preventDefault();
+                const existingAlert = document.getElementById('face-error-alert');
+                if (existingAlert) {
+                    existingAlert.textContent = "Biometric Face Registration is mandatory. Please scan and verify the employee's face first.";
+                    existingAlert.style.display = 'block';
+                } else {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = "alert alert-danger mt-3 text-center mx-auto";
+                    alertDiv.style.maxWidth = "400px";
+                    alertDiv.id = "face-error-alert";
+                    alertDiv.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Biometric Face Registration is mandatory. Please scan and verify the employee's face first.`;
+                    const statusContainer = document.getElementById('status-container');
+                    statusContainer.parentNode.insertBefore(alertDiv, statusContainer.nextSibling);
+                }
+                video.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+        
+        // Clean stream when navigating away
+        window.addEventListener('beforeunload', () => {
+            shutdownCamera();
+        });
+    });
+</script>
+{% endblock %}

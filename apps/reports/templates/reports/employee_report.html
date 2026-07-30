@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}My Attendance Report | Biometric Attendance System{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/reports.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+        </a>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h2 class="fw-bold text-light">My Performance Report</h2>
+                <p class="text-secondary mb-0">Aggregate shift durations, absent rates, and download payroll statement logs.</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button id="export-csv-btn" class="btn btn-export text-light text-nowrap">
+                    <i class="fas fa-file-csv me-2 text-success"></i>Export to CSV
+                </button>
+                <button id="print-report-btn" class="btn btn-export text-light text-nowrap">
+                    <i class="fas fa-print me-2 text-primary"></i>Print Page
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aggregates Widgets -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card p-3 text-center text-light">
+            <div class="report-card-heading">Shift Days Count</div>
+            <div class="summary-value primary">{{ total_days }}</div>
+            <span class="text-secondary small">Logged record days</span>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="glass-card p-3 text-center text-light">
+            <div class="report-card-heading">Standard Presences</div>
+            <div class="summary-value success">{{ present_days }}</div>
+            <span class="text-secondary small">On-time presences</span>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="glass-card p-3 text-center text-light">
+            <div class="report-card-heading">Lateness Count</div>
+            <div class="summary-value warning">{{ late_days }}</div>
+            <span class="text-secondary small">Arrived after shift start</span>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="glass-card p-3 text-center text-light">
+            <div class="report-card-heading">Estimated Earnings</div>
+            <div class="summary-value success">₹{{ total_earned|floatformat:2 }}</div>
+            <span class="text-secondary small">For statement period</span>
+        </div>
+    </div>
+</div>
+
+<!-- Month selection Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="glass-card p-3 d-flex align-items-center justify-content-between gap-3 text-light flex-wrap">
+            <h6 class="fw-bold mb-0 text-nowrap"><i class="fas fa-calendar-alt me-2 text-primary"></i>Select Statement Period</h6>
+            <form method="GET" class="d-flex align-items-center gap-2 flex-wrap">
+                <input type="month" name="month" value="{{ selected_month }}" class="form-control bg-dark text-light border-secondary text-nowrap">
+                <button type="submit" class="btn btn-glow-primary text-nowrap">Filter</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Records List -->
+<div class="glass-card p-4">
+    {% if records %}
+        <div class="table-responsive">
+            <table class="custom-table text-light text-nowrap" id="report-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Assigned Shift</th>
+                        <th>Emp Check-In</th>
+                        <th>Emp Check-Out</th>
+                        <th>Clock In</th>
+                        <th>Clock Out</th>
+                        <th>Working Hours</th>
+                        <th>OT Clock In</th>
+                        <th>OT Clock Out</th>
+                        <th>OT Hours</th>
+                        <th>Earnings</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                        <tr>
+                            <td class="font-monospace fw-bold">{{ r.date|date:"Y-m-d" }}</td>
+                            <td>{{ r.shift_name|default:"--" }}</td>
+                            <td>{{ r.shift_start_time|time:"h:i A"|default:"--" }}</td>
+                            <td>{{ r.shift_end_time|time:"h:i A"|default:"--" }}</td>
+                            <td>
+                                {{ r.check_in|date:"h:i A" }}
+                                {% if r.dynamic_lateness_minutes > 0 %}
+                                    <span class="text-danger d-block small mt-1" style="font-size: 0.75rem;"><i class="fas fa-exclamation-circle me-1"></i>+{{ r.dynamic_lateness_minutes }}m late</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if r.check_out %}
+                                    {{ r.check_out|date:"h:i A" }}
+                                    {% if r.dynamic_is_early_checkout %}
+                                        <span class="text-warning d-block small mt-1" style="font-size: 0.75rem;"><i class="fas fa-exclamation-triangle me-1"></i>-{{ r.dynamic_early_checkout_minutes }}m early</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ r.total_hours|default:"--" }} hrs</td>
+                            <td>
+                                {% if r.ot_record %}
+                                    {{ r.ot_record.check_in|date:"h:i A" }}
+                                {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if r.ot_record and r.ot_record.check_out %}
+                                    {{ r.ot_record.check_out|date:"h:i A" }}
+                                  {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if r.ot_record and r.ot_record.total_hours %}
+                                    <span class="text-success fw-bold">{{ r.ot_record.total_hours }} hrs</span>
+                                {% else %}
+                                    <span class="text-secondary">0</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="text-success fw-bold">₹{{ r.calculated_salary }}</span>
+                                {% if r.ot_record %}
+                                    <small class="text-success d-block" style="font-size: 0.7rem;">OT: +₹{{ r.ot_record.calculated_amount }}</small>
+                                {% endif %}
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">Base: ₹{{ r.base_daily_salary }}</small>
+                            </td>
+                            <td>
+                                <span class="badge-status {% if r.status == 'PRESENT' %}badge-present{% elif r.status == 'LATE' %}badge-late{% elif r.status == 'HALF_DAY' %}badge-half-day{% else %}badge-absent{% endif %}">
+                                    {{ r.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-5 text-secondary">
+            <p class="mb-0">No records found for the selected statement period.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/reports.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% block title %}Admin Management | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold text-light">Admin Management</h2>
+        <p class="text-secondary mb-0">Manage system administration roles and accounts.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-self-start align-self-md-auto">
+        <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center text-nowrap">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+        <a href="{% url 'super_admin:create_admin' %}" class="btn btn-glow-primary d-inline-flex align-items-center justify-content-center text-nowrap">
+            <i class="fas fa-plus me-2"></i>Add Admin Account
+        </a>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    {% if admins %}
+        <!-- Desktop View -->
+        <div class="table-responsive d-none d-md-block">
+            <table class="custom-table text-light">
+                <thead>
+                    <tr>
+                        <th>Logo</th>
+                        <th>Organization</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>GSTIN</th>
+                        <th>Employee Limit</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in admins %}
+                        <tr>
+                            <td>
+                                {% if admin.organization.logo %}
+                                    <img src="{{ admin.organization.logo.url }}" alt="Logo" class="rounded-circle border border-primary p-0.5" style="width: 32px; height: 32px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: bold; font-size: 0.8rem;">
+                                        N/A
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="fw-semibold text-light">{{ admin.organization.name|default:"--" }}</td>
+                            <td class="fw-bold text-primary">{{ admin.username }}</td>
+                            <td>{{ admin.email }}</td>
+                            <td class="font-monospace text-secondary">{{ admin.organization.gstin|default:"--" }}</td>
+                            <td>
+                                <span class="badge bg-secondary text-light px-2 py-1">
+                                    {{ admin.limit.max_employees|default:5 }} Slots
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge-status {% if admin.is_active and not admin.is_terminated %}badge-present{% else %}badge-absent{% endif %}">
+                                    {% if admin.is_active and not admin.is_terminated %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    {% if admin.is_active and not admin.is_terminated %}
+                                        <form method="POST" action="{% url 'super_admin:deactivate_admin' admin.pk %}" onsubmit="return confirm('Are you sure you want to deactivate this admin account? All associated employees will be deactivated as well.');" class="d-inline-flex align-items-center m-0">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Deactivate Admin">
+                                                <i class="fas fa-user-slash"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <form method="POST" action="{% url 'super_admin:activate_admin' admin.pk %}" onsubmit="return confirm('Are you sure you want to reactivate this admin account? All associated employees will be reactivated as well.');" class="d-inline-flex align-items-center m-0">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivate Admin">
+                                                <i class="fas fa-user-check"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    <a href="{% url 'super_admin:edit_admin' admin.pk %}" class="btn btn-sm btn-outline-light border-secondary" title="Edit Admin">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="{% url 'super_admin:delete_admin' admin.pk %}" onsubmit="return confirm('Critical Warning: This action will permanently delete the admin account, all its employees, biometric templates, and all associated data. This action cannot be undone. Are you sure?');" class="d-inline-flex align-items-center m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Permanently Delete Admin">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile View -->
+        <div class="d-block d-md-none">
+            <div class="row g-3">
+                {% for admin in admins %}
+                    <div class="col-12">
+                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                            <!-- Header with Logo and Status -->
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if admin.organization.logo %}
+                                        <img src="{{ admin.organization.logo.url }}" alt="Logo" class="rounded-circle border border-primary p-0.5" style="width: 32px; height: 32px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: bold; font-size: 0.8rem;">
+                                            N/A
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong class="text-light d-block" style="font-size: 0.85rem;">{{ admin.organization.name|default:"--" }}</strong>
+                                        <span class="fw-bold text-primary" style="font-size: 0.8rem;">{{ admin.username }}</span>
+                                    </div>
+                                </div>
+                                <span class="badge-status {% if admin.is_active and not admin.is_terminated %}badge-present{% else %}badge-absent{% endif %}">
+                                    {% if admin.is_active and not admin.is_terminated %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+
+                            <!-- Details Grid -->
+                            <div class="border-top border-secondary pt-2">
+                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Email</span>
+                                        <span class="text-truncate d-block">{{ admin.email }}</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">GSTIN</span>
+                                        <span class="font-monospace text-light d-block">{{ admin.organization.gstin|default:"--" }}</span>
+                                    </div>
+                                    <div class="col-6 mt-1">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Employee Limit</span>
+                                        <span class="badge bg-secondary text-light px-2 py-0.5 mt-0.5 d-inline-block">
+                                            {{ admin.limit.max_employees|default:5 }} Slots
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions Row -->
+                            <div class="border-top border-secondary pt-3 d-flex gap-2 justify-content-end align-items-center flex-wrap">
+                                {% if admin.is_active and not admin.is_terminated %}
+                                    <form method="POST" action="{% url 'super_admin:deactivate_admin' admin.pk %}" onsubmit="return confirm('Are you sure you want to deactivate this admin account? All associated employees will be deactivated as well.');" class="d-inline-flex align-items-center m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-warning py-1 px-2.5 d-inline-flex align-items-center justify-content-center" style="font-size: 0.75rem;">
+                                            <i class="fas fa-user-slash me-1"></i>Deactivate
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="POST" action="{% url 'super_admin:activate_admin' admin.pk %}" onsubmit="return confirm('Are you sure you want to reactivate this admin account? All associated employees will be reactivated as well.');" class="d-inline-flex align-items-center m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-success py-1 px-2.5 d-inline-flex align-items-center justify-content-center" style="font-size: 0.75rem;">
+                                            <i class="fas fa-user-check me-1"></i>Activate
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                <a href="{% url 'super_admin:edit_admin' admin.pk %}" class="btn btn-sm btn-outline-light border-secondary py-1 px-2.5 d-inline-flex align-items-center justify-content-center" style="font-size: 0.75rem;">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </a>
+                                <form method="POST" action="{% url 'super_admin:delete_admin' admin.pk %}" onsubmit="return confirm('Critical Warning: This action will permanently delete the admin account, all its employees, biometric templates, and all associated data. This action cannot be undone. Are you sure?');" class="d-inline-flex align-items-center m-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2.5 d-inline-flex align-items-center justify-content-center" style="font-size: 0.75rem;">
+                                        <i class="fas fa-trash-alt me-1"></i>Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5 text-secondary">
+            <i class="fas fa-users-cog mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+            <p class="mb-0">No admins found in the system.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

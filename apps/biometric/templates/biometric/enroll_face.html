@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Face Biometric Registration | Biometric Attendance System{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/biometric.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2 class="fw-bold text-light">
+            {% if target_user != request.user %}
+                Face Registration for {{ target_user.first_name }} {{ target_user.last_name }} ({{ target_user.username }})
+            {% else %}
+                Face Registration
+            {% endif %}
+        </h2>
+        <p class="text-secondary">
+            {% if target_user != request.user %}
+                Enroll face profile for the newly created employee.
+            {% else %}
+                Enroll your face to enable biometric attendance check-in and check-out.
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Scanner Panel -->
+    <div class="col-lg-7">
+        <div class="glass-card p-4 text-center">
+            <h5 class="fw-bold text-light mb-3 text-start">Biometric Camera Capture</h5>
+            
+            {% if enrolled %}
+                <div class="py-5 text-success">
+                    <i class="fas fa-check-circle mb-3" style="font-size: 4.5rem; text-shadow: 0 0 15px rgba(16, 185, 129, 0.4);"></i>
+                    <h4 class="fw-bold">Biometrics Registered</h4>
+                    <p class="text-secondary">Face biometric templates have been enrolled in the database.</p>
+                    
+                    <form method="POST" action="{% url 'biometric:delete_biometrics' %}" onsubmit="return confirm('Deleting face biometrics will prevent signing in via face recognition. Continue?');" class="mt-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ target_user.id }}">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="fas fa-trash-alt me-2"></i>Delete Face Template
+                        </button>
+                    </form>
+
+                    {% if request.user.role == 'ADMIN' or request.user.role == 'SUPER_ADMIN' %}
+                        <div class="mt-4 pt-3 border-top border-secondary">
+                            <a href="{% url 'employee_management:employee_list' %}" class="btn btn-glow-primary">
+                                <i class="fas fa-users me-2"></i>Back to Employee List
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="webcam-panel mx-auto mb-3" style="position: relative; overflow: hidden;" id="webcam-viewport">
+                    <video id="webcam-view" class="webcam-video" autoplay playsinline></video>
+                    <div class="webcam-overlay">
+                        <div class="scanner-target" style="border: 2px dashed rgba(99, 102, 241, 0.6); box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); border-radius: 50%;"></div>
+                    </div>
+                    <div class="flash-overlay" id="flash-effect" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; opacity: 0; pointer-events: none; transition: opacity 0.15s ease; z-index: 10;"></div>
+                </div>
+                
+                <div class="progress mb-3 bg-dark border border-secondary" style="height: 10px; border-radius: 5px; max-width: 320px; margin: 0 auto;">
+                    <div id="enroll-progress-bar" class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+
+                <div id="status-text" class="webcam-status-text">Initializing webcam...</div>
+
+                <!-- Live Diagnostics Dashboard -->
+                <div class="quality-checks-card mt-3 p-3 bg-dark bg-gradient rounded border border-secondary text-start mx-auto mb-2" style="max-width: 320px; display: none;" id="live-diagnostics-dashboard">
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary">
+                        <span class="text-secondary small fw-bold"><i class="fas fa-tasks me-1 text-primary"></i>Live Quality Checks</span>
+                        <span class="badge bg-secondary px-2 py-1" id="live-score-badge">Score: --</span>
+                    </div>
+                    <div class="row row-cols-2 g-2">
+                        <div class="col small text-secondary" id="chk-detect"><i class="fas fa-circle me-2 text-muted" id="icon-detect"></i>Face Detected</div>
+                        <div class="col small text-secondary" id="chk-center"><i class="fas fa-circle me-2 text-muted" id="icon-center"></i>Centered</div>
+                        <div class="col small text-secondary" id="chk-proximity"><i class="fas fa-circle me-2 text-muted" id="icon-proximity"></i>Proximity</div>
+                        <div class="col small text-secondary" id="chk-lighting"><i class="fas fa-circle me-2 text-muted" id="icon-lighting"></i>Lighting</div>
+                        <div class="col small text-secondary" id="chk-focus"><i class="fas fa-circle me-2 text-muted" id="icon-focus"></i>Sharp Focus</div>
+                        <div class="col small text-secondary" id="chk-eyes"><i class="fas fa-circle me-2 text-muted" id="icon-eyes"></i>Eyes Open</div>
+                    </div>
+                </div>
+
+                <!-- Live Landmark Analysis Card -->
+                <div class="analysis-metrics-card mt-2 p-3 bg-dark bg-gradient rounded border border-secondary text-start mx-auto" style="max-width: 320px; display: none;" id="live-analysis-dashboard">
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary">
+                        <span class="text-secondary small fw-bold"><i class="fas fa-chart-bar me-1 text-primary"></i>Facial Landmark Analysis</span>
+                        <span class="small" id="live-symmetry-badge">Symmetry: --</span>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6 small text-secondary">Face Shape: <span class="text-light fw-bold" id="metric-shape">--</span></div>
+                        <div class="col-6 small text-secondary">Ratio (W/H): <span class="text-light fw-bold" id="metric-ratio">--</span></div>
+                        <div class="col-6 small text-secondary">Expression: <span class="text-light fw-bold" id="metric-smile">--</span></div>
+                        <div class="col-6 small text-secondary">Forehead: <span class="text-light fw-bold" id="metric-forehead">--</span></div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 d-flex justify-content-center gap-2">
+                    <button id="scan-btn" class="btn btn-glow-primary px-4" disabled>
+                        <i class="fas fa-play me-2"></i>Start Auto-Enrollment
+                    </button>
+                    {% if request.user.role == 'ADMIN' or request.user.role == 'SUPER_ADMIN' %}
+                        <a href="{% url 'employee_management:employee_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Pose Wizard Panel -->
+    <div class="col-lg-5">
+        <div class="glass-card p-4">
+            <h5 class="fw-bold text-light mb-3 pb-2 border-bottom border-secondary">
+                <i class="fas fa-video me-2 text-primary"></i>Pose Registration Wizard
+            </h5>
+            <p class="text-secondary small mb-4">The system will automatically capture 10 high-quality samples. Follow the prompts below:</p>
+            
+            <div class="enrollment-guide" id="pose-steps-list">
+                <div class="enrollment-step" id="step-row-1" style="transition: all 0.3s ease;">
+                    <div class="step-number">1</div>
+                    <div>
+                        <div class="text-light fw-semibold" style="font-size: 0.9rem;">Stage 1: Front-Facing</div>
+                        <span class="text-secondary small">Look directly at the camera and blink. (Captures 1-2)</span>
+                    </div>
+                </div>
+                <div class="enrollment-step" id="step-row-2" style="transition: all 0.3s ease;">
+                    <div class="step-number">2</div>
+                    <div>
+                        <div class="text-light fw-semibold" style="font-size: 0.9rem;">Stage 2: Slight Left Turn</div>
+                        <span class="text-secondary small">Turn your head slightly to the left. (Captures 3-4)</span>
+                    </div>
+                </div>
+                <div class="enrollment-step" id="step-row-3" style="transition: all 0.3s ease;">
+                    <div class="step-number">3</div>
+                    <div>
+                        <div class="text-light fw-semibold" style="font-size: 0.9rem;">Stage 3: Slight Right Turn</div>
+                        <span class="text-secondary small">Turn your head slightly to the right. (Captures 5-6)</span>
+                    </div>
+                </div>
+                <div class="enrollment-step" id="step-row-4" style="transition: all 0.3s ease;">
+                    <div class="step-number">4</div>
+                    <div>
+                        <div class="text-light fw-semibold" style="font-size: 0.9rem;">Stage 4: Looking Up</div>
+                        <span class="text-secondary small">Look upwards slightly. (Captures 7-8)</span>
+                    </div>
+                </div>
+                <div class="enrollment-step" id="step-row-5" style="transition: all 0.3s ease;">
+                    <div class="step-number">5</div>
+                    <div>
+                        <div class="text-light fw-semibold" style="font-size: 0.9rem;">Stage 5: Looking Down</div>
+                        <span class="text-secondary small">Look downwards slightly / smile. (Captures 9-10)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not enrolled %}
+<script src="{% static 'js/webcam.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const webcam = new WebcamHandler('webcam-view');
+        const statusText = document.getElementById('status-text');
+        const scanBtn = document.getElementById('scan-btn');
+        const progressBar = document.getElementById('enroll-progress-bar');
+        
+        let enrollmentActive = false;
+        let captureTimer = null;
+        let capturedImages = [];
+        const totalFrames = 10;
+        let successfulFrames = 0;
+        let averageScore = 0;
+        let scoreSum = 0;
+
+        const stagePrompts = [
+            "Look straight and blink your eyes.",          // Frames 1-2
+            "Turn your head slightly to the left.",        // Frames 3-4
+            "Turn your head slightly to the right.",       // Frames 5-6
+            "Look upwards slightly.",                      // Frames 7-8
+            "Look downwards slightly / smile."             // Frames 9-10
+        ];
+
+        try {
+            await webcam.start();
+            statusText.textContent = "Camera Ready. Click 'Start Auto-Enrollment' to begin.";
+            statusText.className = "webcam-status-text text-light";
+            scanBtn.disabled = false;
+        } catch (err) {
+            statusText.textContent = "Failed to access webcam. Please check settings.";
+            statusText.className = "webcam-status-text text-danger fw-bold";
+        }
+
+        scanBtn.addEventListener('click', () => {
+            if (enrollmentActive) {
+                stopEnrollment();
+            } else {
+                startEnrollment();
+            }
+        });
+
+        function startEnrollment() {
+            enrollmentActive = true;
+            capturedImages = [];
+            successfulFrames = 0;
+            scoreSum = 0;
+            progressBar.style.width = '0%';
+            scanBtn.innerHTML = `<i class="fas fa-stop me-2"></i>Stop Enrollment`;
+            scanBtn.className = "btn btn-danger px-4";
+            
+            // Reset UI step rows
+            for (let i = 1; i <= 5; i++) {
+                const row = document.getElementById(`step-row-${i}`);
+                if (row) {
+                    row.classList.remove('completed', 'active');
+                    const numBadge = row.querySelector('.step-number');
+                    if (numBadge) numBadge.textContent = i;
+                }
+            }
+            
+            updateStageUI(1);
+            runCaptureLoop();
+        }
+
+        function stopEnrollment() {
+            enrollmentActive = false;
+            if (captureTimer) {
+                clearTimeout(captureTimer);
+                captureTimer = null;
+            }
+            scanBtn.innerHTML = `<i class="fas fa-play me-2"></i>Start Auto-Enrollment`;
+            scanBtn.className = "btn btn-glow-primary px-4";
+            statusText.textContent = "Enrollment stopped. Click start to retry.";
+            statusText.className = "webcam-status-text text-warning";
+            
+            document.getElementById('live-diagnostics-dashboard').style.display = 'none';
+            document.getElementById('live-analysis-dashboard').style.display = 'none';
+        }
+
+        function updateStageUI(stageNum) {
+            for (let i = 1; i <= 5; i++) {
+                const row = document.getElementById(`step-row-${i}`);
+                if (row) {
+                    row.classList.remove('active');
+                    if (i < stageNum) {
+                        row.classList.add('completed');
+                        const numBadge = row.querySelector('.step-number');
+                        if (numBadge) numBadge.innerHTML = '<i class="fas fa-check" style="font-size: 0.75rem;"></i>';
+                    } else if (i === stageNum) {
+                        row.classList.add('active');
+                    }
+                }
+            }
+        }
+
+        function getStageNumber(frameIndex) {
+            if (frameIndex < 2) return 1;
+            if (frameIndex < 4) return 2;
+            if (frameIndex < 6) return 3;
+            if (frameIndex < 8) return 4;
+            return 5;
+        }
+
+        function triggerFlash() {
+            const flash = document.getElementById('flash-effect');
+            if (flash) {
+                flash.style.opacity = '0.8';
+                setTimeout(() => {
+                    flash.style.opacity = '0';
+                }, 100);
+            }
+        }
+
+        function updateQualityDashboard(checks, score) {
+            const dashboard = document.getElementById('live-diagnostics-dashboard');
+            if (dashboard) dashboard.style.display = 'block';
+            
+            const scoreBadge = document.getElementById('live-score-badge');
+            if (scoreBadge && score !== undefined) {
+                scoreBadge.textContent = `Score: ${score}`;
+                if (score >= 70) {
+                    scoreBadge.className = "badge bg-success px-2 py-1";
+                } else {
+                    scoreBadge.className = "badge bg-warning px-2 py-1";
+                }
+            }
+
+            const checkKeys = ["detect", "center", "proximity", "lighting", "focus", "eyes"];
+            checkKeys.forEach(key => {
+                const element = document.getElementById(`chk-${key}`);
+                const icon = document.getElementById(`icon-${key}`);
+                if (element && icon) {
+                    if (checks && checks[key]) {
+                        icon.className = "fas fa-check-circle me-2 text-success";
+                        element.className = "col small text-success";
+                    } else {
+                        icon.className = "fas fa-times-circle me-2 text-danger";
+                        element.className = "col small text-danger";
+                    }
+                }
+            });
+        }
+
+        function updateFacialAnalysisDashboard(analysis) {
+            const dashboard = document.getElementById('live-analysis-dashboard');
+            if (!analysis || Object.keys(analysis).length === 0) {
+                if (dashboard) dashboard.style.display = 'none';
+                return;
+            }
+            if (dashboard) dashboard.style.display = 'block';
+
+            const symmetry = document.getElementById('live-symmetry-badge');
+            if (symmetry) {
+                symmetry.textContent = `Symmetry: ${analysis.symmetry_score}%`;
+                if (analysis.symmetry_score >= 80) {
+                    symmetry.className = "text-success small fw-bold";
+                } else {
+                    symmetry.className = "text-warning small fw-bold";
+                }
+            }
+
+            const shape = document.getElementById('metric-shape');
+            if (shape) shape.textContent = analysis.face_shape;
+
+            const ratio = document.getElementById('metric-ratio');
+            if (ratio) ratio.textContent = analysis.aspect_ratio;
+
+            const smile = document.getElementById('metric-smile');
+            if (smile) smile.textContent = analysis.smile_detected ? "Active 😃" : "Neutral 😐";
+
+            const forehead = document.getElementById('metric-forehead');
+            if (forehead) forehead.textContent = analysis.forehead_texture;
+        }
+
+        async function runCaptureLoop() {
+            if (!enrollmentActive) return;
+
+            const currentStage = getStageNumber(successfulFrames);
+            updateStageUI(currentStage);
+            
+            statusText.textContent = `[Face ${successfulFrames + 1} of ${totalFrames}] - ${stagePrompts[currentStage - 1]}`;
+            statusText.className = "webcam-status-text text-info";
+
+            const base64 = webcam.snap();
+            if (!base64) {
+                captureTimer = setTimeout(() => runCaptureLoop(), 600);
+                return;
+            }
+
+            try {
+                const response = await fetch("{% url 'biometric:detect_face_api' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ image: base64 })
+                });
+                
+                const data = await response.json();
+                
+                // Update dashboards in real-time
+                updateQualityDashboard(data.checks, data.quality_score);
+                updateFacialAnalysisDashboard(data.facial_analysis);
+
+                if (data.success) {
+                    triggerFlash();
+                    capturedImages.push(base64);
+                    scoreSum += data.quality_score;
+                    successfulFrames++;
+
+                    // Update progress bar
+                    const pct = Math.round((successfulFrames / totalFrames) * 100);
+                    progressBar.style.width = pct + '%';
+
+                    if (successfulFrames < totalFrames) {
+                        captureTimer = setTimeout(() => runCaptureLoop(), 600);
+                    } else {
+                        // Complete capture
+                        averageScore = scoreSum / totalFrames;
+                        finalizeEnrollment();
+                    }
+                } else {
+                    // Quality failed. Show instructions
+                    statusText.textContent = `Adjust Position: ${data.message}`;
+                    statusText.className = "webcam-status-text text-warning fw-semibold";
+                    captureTimer = setTimeout(() => runCaptureLoop(), 800);
+                }
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = "Server communication issue. Retrying...";
+                statusText.className = "webcam-status-text text-danger";
+                captureTimer = setTimeout(() => runCaptureLoop(), 1000);
+            }
+        }
+
+        async function finalizeEnrollment() {
+            stopEnrollment();
+            statusText.textContent = `Captures complete! Average Quality Score: ${averageScore.toFixed(1)}. Enrolling...`;
+            statusText.className = "webcam-status-text text-glow-primary fw-bold";
+
+            try {
+                const enrollResponse = await fetch("{% url 'biometric:enroll_api' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        images: capturedImages,
+                        user_id: '{{ target_user.id }}'
+                    })
+                });
+
+                const enrollData = await enrollResponse.json();
+                if (enrollData.success) {
+                    statusText.textContent = `Registration Complete! Profile registered successfully (Score: ${averageScore.toFixed(1)})`;
+                    statusText.className = "webcam-status-text text-success fw-bold";
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    statusText.textContent = "Enrollment Rejected: " + enrollData.message;
+                    statusText.className = "webcam-status-text text-danger fw-bold";
+                }
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = "Network error during enrollment finalization.";
+                statusText.className = "webcam-status-text text-danger fw-bold";
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

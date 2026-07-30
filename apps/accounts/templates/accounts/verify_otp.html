@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Verify OTP | Biometric Attendance System{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
+
+{% block full_content %}
+<div class="login-container">
+    {% include 'messages.html' %}
+    <div class="login-card glass-card text-light">
+        <div class="text-center mb-4">
+            <i class="fas fa-shield-alt text-primary" style="font-size: 3.5rem; text-shadow: 0 0 15px var(--primary-glow);"></i>
+        </div>
+        <h2 class="login-title">Verify OTP</h2>
+        <p class="login-subtitle">Enter the 6-digit One-Time Password sent to your email.</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group-custom mb-4">
+                <input type="text" name="otp_code" class="form-input-custom text-center font-monospace" placeholder="123456" maxlength="6" required id="id_otp_code" style="letter-spacing: 0.5rem; font-size: 1.5rem;">
+                <i class="fas fa-key form-icon-custom"></i>
+            </div>
+            
+            <button type="submit" class="btn btn-glow-primary w-100 mb-3 py-2.5">
+                <i class="fas fa-check-circle me-2"></i>Verify OTP
+            </button>
+            
+            <div class="text-center mt-3">
+                <a href="{% url 'accounts:forgot_password' %}?restart=true" class="text-secondary text-decoration-none" style="font-size: 0.85rem;">
+                    <i class="fas fa-undo me-1"></i>Start Over
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

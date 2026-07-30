@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Edit Employee | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2 class="fw-bold text-light">Modify Employee Profile</h2>
+        <p class="text-secondary">Update employment parameters, departments, and active statuses.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="glass-card p-3 p-sm-4">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-edit me-2 text-primary"></i>Modify Record: {{ profile.user.get_full_name|default:profile.user.username }}
+            </h5>
+            
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <h6 class="text-primary fw-bold mb-3">1. Personal Information</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">First Name</label>
+                        {{ form.first_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Last Name</label>
+                        {{ form.last_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Email Address</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Phone Number</label>
+                        {{ form.phone_number }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Gender</label>
+                        {{ form.gender }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Date of Birth</label>
+                        {{ form.date_of_birth }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label text-secondary">Current Address</label>
+                        {{ form.current_address }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label text-secondary">Permanent Address</label>
+                        {{ form.permanent_address }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-secondary">City</label>
+                        {{ form.city }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-secondary">State</label>
+                        {{ form.state }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-secondary">Pincode</label>
+                        {{ form.pincode }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Country</label>
+                        {{ form.country }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Nationality</label>
+                        {{ form.nationality }}
+                    </div>
+                </div>
+
+                <h6 class="text-primary fw-bold mb-3">2. Employment Parameters</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Department</label>
+                        {{ form.department }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Designation</label>
+                        {{ form.designation }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Date of Joining</label>
+                        {{ form.date_of_joining }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Employee Status</label>
+                        <select name="status" class="form-select bg-dark text-light border-secondary" id="id_status">
+                            <option value="ACTIVE" {% if form.status.value == 'ACTIVE' or profile.status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                            <option value="INACTIVE" {% if form.status.value == 'INACTIVE' or profile.status == 'INACTIVE' %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Assigned Shift Slot</label>
+                        {{ form.shift }}
+                        {{ form.shift.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Custom Check-In Time (Optional)</label>
+                        {{ form.custom_check_in_time }}
+                        {{ form.custom_check_in_time.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Custom Check-Out Time (Optional)</label>
+                        {{ form.custom_check_out_time }}
+                        {{ form.custom_check_out_time.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Contract / Document</label>
+                        <input type="file" name="document" class="form-control bg-dark text-light border-secondary" id="id_document">
+                        {% if profile.document %}
+                            <div class="mt-2 text-light d-flex align-items-center gap-2" style="font-size: 0.8rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); padding: 0.4rem 0.75rem; border-radius: 6px; width: fit-content; max-width: 100%;">
+                                <i class="fas fa-file-pdf text-danger" style="flex-shrink: 0;"></i>
+                                <span class="text-secondary" style="flex-shrink: 0;">Current:</span>
+                                <a href="{{ profile.document.url }}" target="_blank" class="current-file-link text-truncate" style="word-break: break-all;">{{ profile.document.name }}</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Profile Image (Optional)</label>
+                        <input type="file" name="profile_image" class="form-control bg-dark text-light border-secondary" id="id_profile_image">
+                        {{ form.profile_image.errors }}
+                        {% if profile.profile_image %}
+                            <div class="mt-2 text-light d-flex align-items-center gap-2" style="font-size: 0.8rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); padding: 0.4rem 0.75rem; border-radius: 6px; width: fit-content; max-width: 100%;">
+                                <i class="fas fa-image text-primary" style="flex-shrink: 0;"></i>
+                                <span class="text-secondary" style="flex-shrink: 0;">Current:</span>
+                                <a href="{{ profile.profile_image.url }}" target="_blank" class="current-file-link text-truncate" style="word-break: break-all;">{{ profile.profile_image.name }}</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mt-4 d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-glow-primary d-inline-flex align-items-center justify-content-center">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <a href="{% url 'employee_management:employee_list' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
