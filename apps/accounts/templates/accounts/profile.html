@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}User Profile | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2 class="fw-bold text-light">My Profile</h2>
+        <p class="text-secondary">View and manage your personal bio and system profiles.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: User details card -->
+    <div class="col-lg-4">
+        <div class="glass-card p-4 text-center">
+            <div class="mb-3 position-relative d-inline-block">
+                {% if request.user.userprofile.avatar %}
+                    <img src="{{ request.user.userprofile.avatar.url }}" alt="avatar" class="rounded-circle border border-primary p-1" style="width: 140px; height: 140px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 140px; height: 140px; font-size: 3rem; font-weight: bold;">
+                        {{ request.user.username|slice:":1"|upper }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <h4 class="fw-bold text-light mb-1">{{ request.user.get_full_name|default:request.user.username }}</h4>
+            <span class="badge-status badge-present d-inline-block mb-3 px-3 py-1.5">{{ request.user.get_role_display }}</span>
+            
+            <ul class="list-group list-group-flush text-start bg-transparent mt-3" style="font-size: 0.9rem;">
+                <li class="list-group-item bg-transparent text-secondary border-secondary px-0 d-flex justify-content-between">
+                    <span>Username:</span>
+                    <strong class="text-light">{{ request.user.username }}</strong>
+                </li>
+                <li class="list-group-item bg-transparent text-secondary border-secondary px-0 d-flex justify-content-between">
+                    <span>Email:</span>
+                    <strong class="text-light">{{ request.user.email|default:"N/A" }}</strong>
+                </li>
+                <li class="list-group-item bg-transparent text-secondary border-secondary px-0 d-flex justify-content-between">
+                    <span>Phone:</span>
+                    <strong class="text-light">{{ request.user.phone_number|default:"N/A" }}</strong>
+                </li>
+                <li class="list-group-item bg-transparent text-secondary border-secondary px-0 d-flex justify-content-between">
+                    <span>Gender:</span>
+                    <strong class="text-light">{{ request.user.get_gender_display|default:"N/A" }}</strong>
+                </li>
+                <li class="list-group-item bg-transparent text-secondary border-secondary px-0 d-flex justify-content-between">
+                    <span>Date of Birth:</span>
+                    <strong class="text-light">{{ request.user.date_of_birth|date:"F d, Y"|default:"N/A" }}</strong>
+                </li>
+                <li class="list-group-item bg-transparent text-secondary border-secondary px-0 d-flex justify-content-between">
+                    <span>System Status:</span>
+                    <strong class="{% if request.user.is_approved %}text-success{% else %}text-danger{% endif %}">
+                        {% if request.user.is_approved %}Approved{% else %}Suspended{% endif %}
+                    </strong>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Right Column: Edit Profile details Form -->
+    <div class="col-lg-8">
+        <div class="glass-card p-4">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-edit me-2 text-primary"></i>Edit Profile Details
+            </h5>
+            
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">First Name</label>
+                        {{ form.first_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Last Name</label>
+                        {{ form.last_name }}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Email Address</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Phone Number</label>
+                        {{ form.phone_number }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Gender</label>
+                        {{ form.gender }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Date of Birth</label>
+                        {{ form.date_of_birth }}
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label text-secondary">Avatar Image</label>
+                        {{ form.avatar }}
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label text-secondary">Biography</label>
+                        {{ form.bio }}
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label text-secondary">Current Address</label>
+                        {{ form.address }}
+                    </div>
+                </div>
+                
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-glow-primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <a href="{% url 'accounts:change_password' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-key me-2"></i>Change Password
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

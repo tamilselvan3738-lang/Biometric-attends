@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4 text-light">
+    <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-sm btn-outline-secondary mb-3 d-inline-flex align-items-center gap-1.5 text-nowrap">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+    <!-- Header Block -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-primary">My Assigned Tasks</h2>
+            <p class="text-secondary mb-0">Track and update tasks assigned to you by your reporting manager</p>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="glass-card p-3 text-center border border-secondary">
+                <span class="text-secondary d-block text-uppercase mb-1" style="font-size: 0.72rem;">Total Assigned</span>
+                <h3 class="fw-bold text-primary m-0">{{ total_tasks }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="glass-card p-3 text-center border border-secondary">
+                <span class="text-secondary d-block text-uppercase mb-1" style="font-size: 0.72rem;">Pending / In Progress</span>
+                <h3 class="fw-bold text-warning m-0">{{ pending_tasks|add:in_progress_tasks }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="glass-card p-3 text-center border border-secondary">
+                <span class="text-secondary d-block text-uppercase mb-1" style="font-size: 0.72rem;">Completed</span>
+                <h3 class="fw-bold text-success m-0">{{ completed_tasks }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="glass-card p-3 text-center border border-secondary">
+                <span class="text-secondary d-block text-uppercase mb-1" style="font-size: 0.72rem;">Overdue</span>
+                <h3 class="fw-bold text-danger m-0">{{ overdue_tasks }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks Grid -->
+    <div class="row g-3">
+        {% for assignment in assignments %}
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="glass-card p-3 p-sm-4 border border-secondary h-100 d-flex flex-column justify-content-between">
+                    <!-- Header: Date and Priority Badge -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="font-monospace text-primary fw-bold" style="font-size: 0.85rem;">Due: {{ assignment.task.due_date }}</span>
+                        <div>
+                            {% if assignment.task.priority == 'CRITICAL' %}
+                                <span class="badge bg-danger">Critical</span>
+                            {% elif assignment.task.priority == 'HIGH' %}
+                                <span class="badge bg-warning text-dark">High</span>
+                            {% elif assignment.task.priority == 'MEDIUM' %}
+                                <span class="badge bg-primary">Medium</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Low</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Task Info -->
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-light mb-1">{{ assignment.task.title }}</h6>
+                        <small class="text-secondary opacity-75 d-block">Assigned By: {{ assignment.task.created_by.get_full_name|default:assignment.task.created_by.username }}</small>
+                    </div>
+
+                    <!-- Description -->
+                    <p class="text-secondary mb-3 text-wrap" style="font-size: 0.82rem; line-height: 1.4;">{{ assignment.task.description }}</p>
+
+                    <!-- Details Grid -->
+                    <div class="border-top border-secondary pt-3 mb-3">
+                        <div class="row g-3 text-light" style="font-size: 0.85rem;">
+                            <div class="col-12">
+                                <span class="text-secondary d-block mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">My Status</span>
+                                {% if assignment.status == 'APPROVED' %}
+                                    <span class="badge bg-success">Completed & Accepted</span>
+                                {% elif assignment.status == 'COMPLETED' %}
+                                    <span class="badge bg-info text-dark">Submitted (Review Pending)</span>
+                                {% elif assignment.status == 'REWORK' %}
+                                    <span class="badge bg-warning text-dark">Rework Requested</span>
+                                {% elif assignment.status == 'IN_PROGRESS' %}
+                                    <span class="badge bg-primary">In Progress</span>
+                                {% elif assignment.status == 'ON_HOLD' %}
+                                    <span class="badge bg-secondary">On Hold</span>
+                                {% else %}
+                                    <span class="badge bg-dark border border-secondary text-secondary">Not Started</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions Footer -->
+                    <div class="border-top border-secondary pt-3 mt-auto d-flex justify-content-end align-items-center">
+                        <a href="{% url 'tasks:employee_task_detail' assignment.pk %}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 w-100 justify-content-center">
+                            <i class="fas fa-arrow-right"></i> View Task Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="glass-card p-4 border border-secondary text-center py-5 text-secondary">
+                    <i class="fas fa-tasks mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+                    <p class="mb-0">No assigned tasks found.</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .glass-card {
+        background: rgba(30, 41, 59, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 12px;
+    }
+</style>
+{% endblock %}

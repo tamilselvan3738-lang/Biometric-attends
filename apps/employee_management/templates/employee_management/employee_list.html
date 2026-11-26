@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}{{ title_prefix }} Employees | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-6 col-lg-7">
+        <h2 class="fw-bold text-light mb-1">{{ title_prefix }} Employees</h2>
+        <p class="text-secondary mb-0">View staff directory, assign designations, and enroll biometrics.</p>
+    </div>
+    <div class="col-md-6 col-lg-5 d-flex justify-content-md-end gap-2 flex-wrap">
+        <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center text-nowrap">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+        {% if title_prefix == 'Active' %}
+            <a href="{% url 'employee_management:inactive_employees' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center text-nowrap">
+                <i class="fas fa-user-slash me-2"></i>Inactive Directory
+            </a>
+        {% else %}
+            <a href="{% url 'employee_management:employee_list' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center text-nowrap">
+                <i class="fas fa-users me-2"></i>Active Directory
+            </a>
+        {% endif %}
+        {% if request.user.role == 'ADMIN' %}
+            <a href="{% url 'employee_management:add_employee' %}" class="btn btn-glow-primary d-inline-flex align-items-center justify-content-center text-nowrap">
+                <i class="fas fa-user-plus me-2"></i>Register Employee
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    #employeeTabs .nav-link {
+        transition: all 0.3s ease;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        background: rgba(31, 41, 55, 0.4);
+        backdrop-filter: blur(10px);
+    }
+    #employeeTabs .nav-link:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+    #employeeTabs .nav-link.active {
+        background: var(--primary-gradient, linear-gradient(135deg, #3b82f6, #8b5cf6)) !important;
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        border-color: transparent !important;
+    }
+    
+    /* Transparent styles for collapsible reporting employee list */
+    .inner-reportees-table {
+        --bs-table-bg: transparent !important;
+        --bs-table-color: #f8fafc !important;
+        background: transparent !important;
+        border-collapse: collapse !important;
+    }
+    .inner-reportees-table th,
+    .inner-reportees-table td {
+        background: transparent !important;
+        color: #f8fafc !important;
+        border-color: rgba(255, 255, 255, 0.07) !important;
+    }
+    .inner-reportees-table tr {
+        background: transparent !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+    }
+    .inner-reportees-table tr:hover {
+        background: rgba(255, 255, 255, 0.03) !important;
+    }
+</style>
+
+<ul class="nav nav-pills mb-4 gap-2" id="employeeTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active text-light px-4 py-2 rounded-pill border" id="all-tab" data-bs-toggle="pill" data-bs-target="#all-employees" type="button" role="tab" aria-controls="all-employees" aria-selected="true">All Staff ({{ employees|length }})</button>
+    </li>
+    {% if enable_employee_types %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link text-light px-4 py-2 rounded-pill border" id="hr-tab" data-bs-toggle="pill" data-bs-target="#hr-team" type="button" role="tab" aria-controls="hr-team" aria-selected="false">HR Team ({{ hr_team|length }})</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link text-light px-4 py-2 rounded-pill border" id="manager-tab" data-bs-toggle="pill" data-bs-target="#managers" type="button" role="tab" aria-controls="managers" aria-selected="false">Managers ({{ managers|length }})</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link text-light px-4 py-2 rounded-pill border" id="employee-tab" data-bs-toggle="pill" data-bs-target="#employees-only" type="button" role="tab" aria-controls="employees-only" aria-selected="false">Employees ({{ only_employees|length }})</button>
+    </li>
+    {% endif %}
+</ul>
+
+<div class="glass-card p-4">
+    <div class="tab-content" id="employeeTabsContent">
+        <!-- All Employees Tab -->
+        <div class="tab-pane fade show active" id="all-employees" role="tabpanel" aria-labelledby="all-tab">
+            {% include 'employee_management/_employee_list_content.html' with list_data=employees empty_message="No employees found in this directory." %}
+        </div>
+        
+        {% if enable_employee_types %}
+        <!-- HR Team Tab -->
+        <div class="tab-pane fade" id="hr-team" role="tabpanel" aria-labelledby="hr-tab">
+            {% include 'employee_management/_employee_list_content.html' with list_data=hr_team empty_message="No HR Team members found in this directory." %}
+        </div>
+        
+        <!-- Managers Tab -->
+        <div class="tab-pane fade" id="managers" role="tabpanel" aria-labelledby="manager-tab">
+            {% include 'employee_management/_employee_list_content.html' with list_data=managers empty_message="No Managers found in this directory." %}
+        </div>
+        
+        <!-- Employees Tab -->
+        <div class="tab-pane fade" id="employees-only" role="tabpanel" aria-labelledby="employee-tab">
+            {% include 'employee_management/_employee_list_content.html' with list_data=only_employees empty_message="No regular employees found in this directory." %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const collapses = document.querySelectorAll('.collapse');
+        collapses.forEach(el => {
+            el.addEventListener('show.bs.collapse', function() {
+                const btn = document.querySelector(`[data-bs-target="#${el.id}"]`);
+                if (btn) {
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-up');
+                    }
+                }
+            });
+            el.addEventListener('hide.bs.collapse', function() {
+                const btn = document.querySelector(`[data-bs-target="#${el.id}"]`);
+                if (btn) {
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('fa-chevron-up');
+                        icon.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

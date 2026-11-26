@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Biometric Audit Logs | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h2 class="fw-bold text-light mb-1">Biometric Audit Logs</h2>
+            <p class="text-secondary mb-0">Track all face registration and verification events for security audit.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center text-nowrap">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    {% if logs %}
+        <!-- Desktop/Tablet View (Table Layout) -->
+        <div class="d-none d-md-block">
+            <div class="table-responsive">
+                <table class="custom-table text-light">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User Account</th>
+                            <th>Action</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                            <tr>
+                                <td class="font-monospace">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    <div class="fw-semibold text-light">{{ log.user.get_full_name|default:log.user.username }}</div>
+                                    <small class="text-secondary opacity-75">{{ log.user.username }} ({{ log.user.get_role_display }})</small>
+                                </td>
+                                <td>
+                                    {% if log.action == 'ENROLL' %}
+                                        <span class="text-primary"><i class="fas fa-camera me-1"></i>Enrollment</span>
+                                    {% elif log.action == 'VERIFY' %}
+                                        <span class="text-secondary"><i class="fas fa-fingerprint me-1"></i>Verification</span>
+                                    {% else %}
+                                        <span class="text-danger"><i class="fas fa-trash-alt me-1"></i>Deletion</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge-status {% if log.status == 'SUCCESS' %}badge-present{% else %}badge-absent{% endif %}">
+                                        {{ log.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="text-secondary">{{ log.details|default:"N/A" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Mobile View (Card Layout) -->
+        <div class="d-block d-md-none">
+            <div class="row g-3">
+                {% for log in logs %}
+                    <div class="col-12">
+                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                            <!-- Timestamp and Status Header -->
+                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                <span class="font-monospace text-primary" style="font-size: 0.8rem;">{{ log.timestamp|date:"Y-m-d H:i:s" }}</span>
+                                <span class="badge {% if log.status == 'SUCCESS' %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} py-0.5 px-2" style="font-size: 0.65rem;">
+                                    {{ log.get_status_display }}
+                                </span>
+                            </div>
+
+                            <!-- Details Grid -->
+                            <div class="border-top border-secondary pt-2">
+                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">User Account</span>
+                                        <strong class="text-truncate d-block" style="font-size: 0.85rem;">{{ log.user.get_full_name|default:log.user.username }}</strong>
+                                        <small class="text-secondary opacity-75 d-block text-truncate" style="font-size: 0.7rem;">{{ log.user.username }} ({{ log.user.get_role_display }})</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Action</span>
+                                        {% if log.action == 'ENROLL' %}
+                                            <strong class="text-primary" style="font-size: 0.85rem;"><i class="fas fa-camera me-1"></i>Enrollment</strong>
+                                        {% elif log.action == 'VERIFY' %}
+                                            <strong class="text-secondary" style="font-size: 0.85rem;"><i class="fas fa-fingerprint me-1"></i>Verification</strong>
+                                        {% else %}
+                                            <strong class="text-danger" style="font-size: 0.85rem;"><i class="fas fa-trash-alt me-1"></i>Deletion</strong>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-12 mt-1">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Details</span>
+                                        <p class="mb-0 text-light opacity-75" style="line-height: 1.4; font-size: 0.75rem;">{{ log.details|default:"N/A" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5 text-secondary">
+            <i class="fas fa-history mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+            <p class="mb-0">No biometric activity logs found.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

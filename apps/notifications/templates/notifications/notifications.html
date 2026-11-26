@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Notifications | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+        </a>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h2 class="fw-bold text-light">Notifications Hub</h2>
+                <p class="text-secondary mb-0">Track direct alerts and corporate-wide announcements.</p>
+            </div>
+            {% if request.user.role in 'ADMIN,SUPER_ADMIN' %}
+                <a href="{% url 'notifications:create_announcement' %}" class="btn btn-glow-primary text-nowrap">
+                    <i class="fas fa-bullhorn me-2"></i>Publish Announcement
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Personal Alerts -->
+    <div class="col-lg-6">
+        <div class="glass-card p-4">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-bell me-2 text-primary"></i>My Direct Alerts
+            </h5>
+            
+            {% if notifications %}
+                <div class="d-flex flex-column gap-3">
+                    {% for n in notifications %}
+                        <div class="p-3 rounded border border-secondary d-flex justify-content-between align-items-start" style="background: rgba(31, 41, 55, 0.25);">
+                            <div>
+                                <h6 class="fw-semibold text-light mb-1 {% if not n.is_read %}fw-bold text-primary{% endif %}">
+                                    {{ n.title }}
+                                </h6>
+                                <p class="text-secondary small mb-1">{{ n.message }}</p>
+                                <small class="text-muted font-monospace">{{ n.created_at|date:"Y-m-d H:i" }}</small>
+                            </div>
+                            {% if not n.is_read %}
+                                <form method="POST" action="{% url 'notifications:mark_as_read' n.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary border-0" title="Mark as read">
+                                        <i class="fas fa-check text-success"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-secondary">
+                    <i class="fas fa-bell-slash mb-3" style="font-size: 2.5rem; color: var(--text-muted);"></i>
+                    <p class="mb-0">You have no direct alerts.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Right Column: Announcements -->
+    <div class="col-lg-6">
+        <div class="glass-card p-4">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-bullhorn me-2 text-secondary"></i>Company Bulletins
+            </h5>
+            
+            {% if announcements %}
+                <div class="d-flex flex-column gap-3">
+                    {% for a in announcements %}
+                        <div class="p-3 rounded border border-secondary" style="background: rgba(20, 184, 166, 0.05); border-left: 4px solid var(--secondary) !important;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-light mb-0">{{ a.title }}</h6>
+                                <span class="badge bg-secondary" style="font-size: 0.65rem;">{{ a.get_target_role_display }}</span>
+                            </div>
+                            <p class="text-secondary small mb-2">{{ a.content }}</p>
+                            <div class="d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
+                                <span class="text-muted">By: {{ a.sender.get_full_name|default:a.sender.username }}</span>
+                                <span class="text-muted font-monospace">{{ a.created_at|date:"Y-m-d H:i" }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-secondary">
+                    <i class="fas fa-volume-mute mb-3" style="font-size: 2.5rem; color: var(--text-muted);"></i>
+                    <p class="mb-0">No active bulletins posted.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

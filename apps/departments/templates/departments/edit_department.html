@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Edit Department | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2 class="fw-bold text-light">Modify Department</h2>
+        <p class="text-secondary">Update department code, title, or management details.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <div class="glass-card p-4">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-edit me-2 text-primary"></i>Edit Department: {{ department.name }}
+            </h5>
+            
+            <form method="POST">
+                {% csrf_token %}
+                {{ form|crispy }}
+                
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-glow-primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <a href="{% url 'departments:list' %}" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #111827 0%, #030712 100%);
+    padding: 1.5rem;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 440px;
+    padding: 2.5rem;
+    border-radius: 16px;
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-logo {
+    display: block;
+    margin: 0 auto 1.5rem;
+    height: 60px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px var(--primary-glow));
+}
+
+.login-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #ffffff, var(--text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.login-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+/* Custom form styles for login */
+.form-group-custom {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.form-input-custom {
+    width: 100%;
+    background: rgba(31, 41, 55, 0.5);
+    border: 1px solid var(--glass-border);
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+.form-input-custom:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+    background: rgba(31, 41, 55, 0.8);
+}
+
+.form-icon-custom {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    transition: var(--transition);
+}
+
+.form-input-custom:focus + .form-icon-custom {
+    color: var(--primary);
+}
+
+/* Mobile responsive padding constraints */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 1.5rem !important;
+    }
+}

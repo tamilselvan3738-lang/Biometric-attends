@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block title %}Slot Limit Requests | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h2 class="fw-bold text-light mb-1">Admin Slot Limit Requests</h2>
+            <p class="text-secondary mb-0">Review and approve employee creation slot increase requests submitted by administrators.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center text-nowrap">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    {% if limit_requests %}
+        <!-- Desktop View -->
+        <div class="table-responsive d-none d-md-block">
+            <table class="custom-table text-light">
+                <thead>
+                    <tr>
+                        <th>Date Requested</th>
+                        <th>Administrator</th>
+                        <th>Requested Limit</th>
+                        <th>Reason / Justification</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in limit_requests %}
+                        <tr>
+                            <td class="fw-bold text-secondary">{{ req.created_at|date:"F d, Y, h:i A" }}</td>
+                            <td>
+                                <div class="fw-semibold text-light">{{ req.admin.get_full_name|default:req.admin.username }}</div>
+                                <small class="text-muted">Username: {{ req.admin.username }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary text-light px-2.5 py-1.5" style="font-size: 0.85rem;">
+                                    {{ req.requested_limit }} Slots
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-secondary small">{{ req.reason }}</span>
+                            </td>
+                            <td>
+                                <span class="badge-status 
+                                    {% if req.status == 'APPROVED' %}badge-present
+                                    {% elif req.status == 'REJECTED' %}badge-absent
+                                    {% else %}badge-late{% endif %}">
+                                    {{ req.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if req.status == 'PENDING' %}
+                                    <div class="d-flex gap-2">
+                                        <form method="POST" action="{% url 'super_admin:approve_limit_request' req.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-glow-success py-1 px-3">
+                                                <i class="fas fa-check me-1"></i>Approve
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{% url 'super_admin:reject_limit_request' req.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-3">
+                                                <i class="fas fa-times me-1"></i>Reject
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    <small class="text-muted">Reviewed on {{ req.reviewed_at|date:"Y-m-d" }}</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile View -->
+        <div class="d-block d-md-none">
+            <div class="row g-3">
+                {% for req in limit_requests %}
+                    <div class="col-12">
+                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                            <!-- Date and Status Header -->
+                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                <span class="text-secondary small font-monospace d-block">Requested: {{ req.created_at|date:"Y-m-d" }}</span>
+                                <span class="badge-status 
+                                    {% if req.status == 'APPROVED' %}badge-present
+                                    {% elif req.status == 'REJECTED' %}badge-absent
+                                    {% else %}badge-late{% endif %}">
+                                    {{ req.get_status_display }}
+                                </span>
+                            </div>
+
+                            <!-- Details Grid -->
+                            <div class="border-top border-secondary pt-2">
+                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Administrator</span>
+                                        <strong class="text-truncate d-block">{{ req.admin.get_full_name|default:req.admin.username }}</strong>
+                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Username: {{ req.admin.username }}</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Requested Limit</span>
+                                        <span class="badge bg-primary text-light px-2 py-0.5 mt-0.5 d-inline-block" style="font-size: 0.75rem;">
+                                            {{ req.requested_limit }} Slots
+                                        </span>
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Reason / Justification</span>
+                                        <p class="mb-0 text-light opacity-75 text-wrap" style="font-size: 0.75rem; line-height: 1.4;">{{ req.reason }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions Row -->
+                            <div class="border-top border-secondary pt-3 d-flex gap-2 justify-content-end align-items-center">
+                                {% if req.status == 'PENDING' %}
+                                    <form method="POST" action="{% url 'super_admin:approve_limit_request' req.pk %}" class="d-inline-flex align-items-center m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-glow-success py-1 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.75rem;">
+                                            <i class="fas fa-check me-1"></i>Approve
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{% url 'super_admin:reject_limit_request' req.pk %}" class="d-inline-flex align-items-center m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.75rem;">
+                                            <i class="fas fa-times me-1"></i>Reject
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <small class="text-muted">Reviewed on {{ req.reviewed_at|date:"Y-m-d" }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5 text-secondary">
+            <i class="fas fa-key mb-3" style="font-size: 3.5rem; color: var(--text-muted);"></i>
+            <p class="mb-0">No slot limit requests found.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

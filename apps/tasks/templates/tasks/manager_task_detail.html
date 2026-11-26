@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4 text-light">
+    <!-- Back Navigation -->
+    <div class="mb-3">
+        <a href="{% url 'tasks:manager_task_list' %}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fas fa-arrow-left"></i> Back to Task Management
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left: Task Specs and Assignees status -->
+        <div class="col-lg-8">
+            <!-- Task Info -->
+            <div class="glass-card p-4 border border-secondary mb-4">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <h3 class="fw-bold mb-1 text-primary">{{ task.title }}</h3>
+                        <p class="text-secondary mb-0">Created on {{ task.created_at|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        {% if task.priority == 'CRITICAL' %}
+                        <span class="badge bg-danger px-3 py-1.5 fs-7">Critical Priority</span>
+                        {% elif task.priority == 'HIGH' %}
+                        <span class="badge bg-warning text-dark px-3 py-1.5 fs-7">High Priority</span>
+                        {% elif task.priority == 'MEDIUM' %}
+                        <span class="badge bg-primary px-3 py-1.5 fs-7">Medium Priority</span>
+                        {% else %}
+                        <span class="badge bg-secondary px-3 py-1.5 fs-7">Low Priority</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="border-secondary">
+
+                <div class="mb-4">
+                    <h6 class="text-primary fw-bold mb-2">Instructions / Description</h6>
+                    <div class="p-3 bg-dark rounded border border-secondary text-light" style="white-space: pre-wrap; font-size: 0.92rem; line-height: 1.5;">{{ task.description }}</div>
+                </div>
+
+                <!-- Timings grid -->
+                <div class="row g-3 text-secondary font-monospace small mb-2">
+                    <div class="col-sm-6">
+                        <i class="far fa-calendar-alt text-primary me-2"></i>Start Date: <strong class="text-light">{{ task.start_date }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <i class="far fa-clock text-danger me-2"></i>Due Date: <strong class="text-light">{{ task.due_date }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignees Progress -->
+            <div class="glass-card p-4 border border-secondary">
+                <h5 class="fw-bold mb-3 text-primary">Assignee Status & Reviews</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark border-secondary align-middle">
+                        <thead>
+                            <tr class="border-secondary text-secondary">
+                                <th>Employee</th>
+                                <th>Assigned Date</th>
+                                <th>Current Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in assignments %}
+                            <tr class="border-secondary">
+                                <td>
+                                    <div class="fw-bold text-light">{{ assignment.employee.get_full_name|default:assignment.employee.username }}</div>
+                                    <small class="text-secondary font-monospace">{{ assignment.employee.email }}</small>
+                                </td>
+                                <td>
+                                    <span class="font-monospace small text-secondary">{{ assignment.assigned_at|date:"Y-m-d" }}</span>
+                                </td>
+                                <td>
+                                    {% if assignment.status == 'APPROVED' %}
+                                    <span class="badge bg-success">Completion Accepted</span>
+                                    {% elif assignment.status == 'COMPLETED' %}
+                                    <span class="badge bg-info text-dark">Awaiting Approval</span>
+                                    {% elif assignment.status == 'REWORK' %}
+                                    <span class="badge bg-warning text-dark">Rework Requested</span>
+                                    {% elif assignment.status == 'IN_PROGRESS' %}
+                                    <span class="badge bg-primary">In Progress</span>
+                                    {% elif assignment.status == 'ON_HOLD' %}
+                                    <span class="badge bg-secondary">On Hold</span>
+                                    {% else %}
+                                    <span class="badge bg-dark border border-secondary text-secondary">Not Started</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if assignment.status == 'COMPLETED' %}
+                                    <!-- Accept / Rework Inline Form -->
+                                    <div class="d-inline-flex gap-1.5">
+                                        <form method="POST" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                                            <input type="hidden" name="action" value="accept">
+                                            <button type="submit" class="btn btn-sm btn-success px-2.5 d-inline-flex align-items-center gap-1.5">
+                                                <i class="fas fa-check"></i> Accept
+                                            </button>
+                                        </form>
+                                        
+                                        <!-- Rework Trigger Button -->
+                                        <button class="btn btn-sm btn-outline-warning px-2.5 d-inline-flex align-items-center gap-1.5" type="button" data-bs-toggle="collapse" data-bs-target="#rework-collapse-{{ assignment.id }}" aria-expanded="false" aria-controls="rework-collapse-{{ assignment.id }}">
+                                            <i class="fas fa-undo"></i> Request Rework
+                                        </button>
+                                    </div>
+
+                                    <!-- Collapsible Rework Form -->
+                                    <div class="collapse mt-3 text-start" id="rework-collapse-{{ assignment.id }}">
+                                        <div class="p-3 bg-dark rounded border border-warning">
+                                            <form method="POST">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                                                <input type="hidden" name="action" value="rework">
+                                                <div class="mb-2">
+                                                    <label class="form-label text-warning small fw-bold">Describe Rework Requirements / Reason (Mandatory)</label>
+                                                    <textarea name="rework_comments" class="form-control form-control-sm bg-dark text-light border-secondary" rows="2" placeholder="Explain what needs to be changed..." required></textarea>
+                                                </div>
+                                                <div class="d-flex justify-content-end gap-1.5">
+                                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="collapse" data-bs-target="#rework-collapse-{{ assignment.id }}">Cancel</button>
+                                                    <button type="submit" class="btn btn-sm btn-warning text-dark font-semibold">Submit Rework</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-secondary small">No pending action</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-secondary py-3">No assignees linked to this task.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Comments and Attachments list -->
+        <div class="col-lg-4 d-flex flex-column gap-4">
+            <!-- Files / Attachments -->
+            <div class="glass-card p-4 border border-secondary">
+                <h5 class="fw-bold mb-3 text-primary">Task Attachments</h5>
+                <div class="d-flex flex-column gap-2" style="max-height: 250px; overflow-y: auto;">
+                    {% for file in attachments %}
+                    <div class="p-2 rounded bg-dark border border-secondary d-flex justify-content-between align-items-center">
+                        <div class="text-truncate" style="max-width: 200px;">
+                            <a href="{{ file.file.url }}" target="_blank" class="text-light text-decoration-none small d-block text-truncate fw-semibold">
+                                <i class="far fa-file-alt text-primary me-1.5"></i>{{ file.filename }}
+                            </a>
+                            <small class="text-secondary font-monospace" style="font-size: 0.7rem;">By {{ file.uploaded_by.username }}</small>
+                        </div>
+                        <a href="{{ file.file.url }}" download class="btn btn-sm btn-outline-secondary py-0.5 px-1.5" title="Download">
+                            <i class="fas fa-download" style="font-size: 0.8rem;"></i>
+                        </a>
+                    </div>
+                    {% empty %}
+                    <p class="text-secondary text-center py-3 m-0 small">No supporting resources attached.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Comments Thread -->
+            <div class="glass-card p-4 border border-secondary d-flex flex-column" style="min-height: 400px;">
+                <h5 class="fw-bold mb-3 text-primary">Progress Updates & Chat</h5>
+                
+                <!-- Comment Thread list -->
+                <div class="d-flex flex-column gap-3 mb-3 flex-grow-1" style="max-height: 350px; overflow-y: auto;">
+                    {% for comment in comments %}
+                    <div class="p-2.5 rounded {% if comment.author == request.user %}bg-primary-dark border-primary{% else %}bg-dark border-secondary{% endif %} border">
+                        <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
+                            <strong class="text-light">{{ comment.author.get_full_name|default:comment.author.username }}</strong>
+                            <span class="text-secondary font-monospace">{{ comment.created_at|date:"M d, H:i" }}</span>
+                        </div>
+                        <p class="text-light mb-0 small" style="line-height: 1.4; word-break: break-word;">{{ comment.content }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-secondary text-center py-4 my-auto small">No comments or updates posted yet.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Add Comment Form -->
+                <form method="POST" class="mt-auto">
+                    {% csrf_token %}
+                    <input type="hidden" name="comment_submit" value="1">
+                    <div class="mb-2">
+                        {{ comment_form.content }}
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100">
+                        <i class="fas fa-paper-plane me-1"></i> Send Comment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .glass-card {
+        background: rgba(30, 41, 59, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 12px;
+    }
+    .bg-primary-dark {
+        background: rgba(59, 130, 246, 0.12);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}Manage Shifts - {{ admin_user.username }} | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h2 class="fw-bold text-light">Manage Shift Slots</h2>
+            <p class="text-secondary mb-0">Admin: <span class="text-primary fw-bold">{{ admin_user.username }}</span> ({{ admin_user.organization.name }})</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'super_admin:admin_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Admins
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Active Structure Summary -->
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                <div>
+                    <h5 class="fw-bold text-light mb-1">Assigned Shift Structure</h5>
+                    <p class="text-secondary mb-0">Determines the standard shifts template assigned during creation.</p>
+                </div>
+                <span class="badge bg-primary px-3 py-2 fs-6 flex-shrink-0">
+                    <i class="fas fa-sitemap me-2"></i>{{ config.get_structure_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shifts Table -->
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <h5 class="fw-bold text-light mb-4 pb-2 border-bottom border-secondary">
+                <i class="fas fa-clock me-2 text-primary"></i>Shift Slots Configuration
+            </h5>
+            
+            {% if shifts %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle border-secondary">
+                        <thead>
+                            <tr>
+                                <th>Shift Name</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Status</th>
+                                <th class="text-end text-nowrap">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shift in shifts %}
+                                <tr>
+                                    <td>
+                                        <strong class="text-light">{{ shift.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-dark text-info border border-info px-2 py-1 font-monospace">
+                                            {{ shift.start_time|time:"h:i A" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-dark text-info border border-info px-2 py-1 font-monospace">
+                                            {{ shift.end_time|time:"h:i A" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge-status {% if shift.is_active %}badge-present{% else %}badge-absent{% endif %}">
+                                            {% if shift.is_active %}Active{% else %}Inactive{% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="text-end text-nowrap">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <form method="POST" action="{% url 'super_admin:super_admin_shift_toggle' admin_user.pk shift.pk %}" class="m-0">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm {% if shift.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}" style="font-size: 0.75rem;">
+                                                    {% if shift.is_active %}Deactivate{% else %}Activate{% endif %}
+                                                </button>
+                                            </form>
+                                            
+                                            <button type="button" class="btn btn-sm btn-outline-light border-secondary" data-bs-toggle="modal" data-bs-target="#editShiftModal-{{ shift.id }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            
+                                            <form method="POST" action="{% url 'super_admin:super_admin_shift_delete' admin_user.pk shift.pk %}" onsubmit="return confirm('Are you sure you want to permanently delete this shift slot?');" class="m-0">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-secondary">
+                    <i class="fas fa-clock mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+                    <p class="mb-0">No shift slots configured for this Admin.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+    {% for shift in shifts %}
+        <!-- Edit Shift Modal -->
+        <div class="modal fade" id="editShiftModal-{{ shift.id }}" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-dark text-light border-secondary">
+                    <div class="modal-header border-secondary bg-black bg-opacity-25">
+                        <h5 class="modal-title fw-bold">Edit Shift: {{ shift.name }}</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="POST" action="{% url 'super_admin:super_admin_shift_edit' admin_user.pk shift.pk %}">
+                        {% csrf_token %}
+                        <div class="modal-body p-4">
+                            <div class="mb-3">
+                                <label class="form-label text-secondary">Shift Name</label>
+                                <input type="text" name="name" value="{{ shift.name }}" required class="form-control bg-dark text-light border-secondary">
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label text-secondary">Start Time</label>
+                                    <input type="time" name="start_time" value="{{ shift.start_time|time:'H:i' }}" required class="form-control bg-dark text-light border-secondary">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label text-secondary">End Time</label>
+                                    <input type="time" name="end_time" value="{{ shift.end_time|time:'H:i' }}" required class="form-control bg-dark text-light border-secondary">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-secondary bg-black bg-opacity-25">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-glow-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endblock %}

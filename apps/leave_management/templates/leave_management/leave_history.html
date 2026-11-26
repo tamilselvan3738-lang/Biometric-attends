@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}My Leave History | Biometric Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <a href="{% url 'dashboards:dispatcher' %}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+        </a>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <h2 class="fw-bold text-light">My Leave Applications</h2>
+                <p class="text-secondary mb-0">Monitor status parameters and supervisor responses.</p>
+            </div>
+            <a href="{% url 'leave_management:apply_leave' %}" class="btn btn-glow-primary align-self-start align-self-md-auto text-nowrap">
+                <i class="fas fa-plus me-2"></i>Apply Leave
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    {% if leaves %}
+        <!-- Desktop View -->
+        <div class="table-responsive d-none d-md-block">
+            <table class="custom-table text-light">
+                <thead>
+                    <tr>
+                        <th>Date Applied</th>
+                        <th>Leave Type</th>
+                        <th>Duration</th>
+                        <th>Reason Summary</th>
+                        <th>Approval Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in leaves %}
+                        <tr>
+                            <td>{{ l.applied_at|date:"Y-m-d" }}</td>
+                            <td class="fw-semibold text-primary">{{ l.get_leave_type_display }}</td>
+                            <td>{{ l.start_date|date:"M d" }} - {{ l.end_date|date:"M d, Y" }}</td>
+                            <td>{{ l.reason|truncatechars:40 }}</td>
+                            <td>
+                                <span class="badge-status {% if l.status == 'APPROVED' %}badge-present{% elif l.status == 'REJECTED' %}badge-absent{% else %}badge-late{% endif %}">
+                                    {{ l.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'leave_management:leave_details' l.pk %}" class="btn btn-sm btn-outline-light border-secondary">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile View -->
+        <div class="d-block d-md-none">
+            <div class="row g-3">
+                {% for l in leaves %}
+                    <div class="col-12">
+                        <div class="p-3 rounded bg-dark border border-secondary d-flex flex-column gap-3 position-relative">
+                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                <span class="text-secondary small font-monospace d-block">Applied: {{ l.applied_at|date:"Y-m-d" }}</span>
+                                <span class="badge-status {% if l.status == 'APPROVED' %}badge-present{% elif l.status == 'REJECTED' %}badge-absent{% else %}badge-late{% endif %}">
+                                    {{ l.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="border-top border-secondary pt-2">
+                                <div class="row g-2 text-light" style="font-size: 0.8rem;">
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Leave Type</span>
+                                        <strong class="text-primary">{{ l.get_leave_type_display }}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Duration</span>
+                                        <strong class="d-block" style="font-size: 0.75rem;">{{ l.start_date|date:"M d" }} - {{ l.end_date|date:"M d, Y" }}</strong>
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        <span class="text-secondary d-block" style="font-size: 0.65rem; text-transform: uppercase;">Reason Summary</span>
+                                        <p class="mb-0 text-light opacity-75 text-wrap" style="font-size: 0.75rem; line-height: 1.4;">{{ l.reason }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="border-top border-secondary pt-3 d-flex justify-content-end align-items-center">
+                                <a href="{% url 'leave_management:leave_details' l.pk %}" class="btn btn-sm btn-outline-light border-secondary py-1 px-2.5 d-inline-flex align-items-center justify-content-center" style="font-size: 0.75rem;">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5 text-secondary">
+            <i class="fas fa-calendar-times mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+            <p class="mb-0">You haven't submitted any leave applications yet.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

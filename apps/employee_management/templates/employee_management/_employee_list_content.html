@@ -1,0 +1,134 @@
+{% if list_data %}
+    <div class="row g-3">
+        {% for emp in list_data %}
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="glass-card p-3 p-sm-4 border border-secondary h-100 d-flex flex-column justify-content-between">
+                    <!-- Avatar and Status Header -->
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle overflow-hidden d-flex align-items-center justify-content-center border border-secondary" style="width: 48px; height: 48px; background-color: #0b0f19; flex-shrink: 0;">
+                            {% if emp.profile_image %}
+                                <img src="{{ emp.profile_image.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% elif emp.user.faceenrollment and emp.user.faceenrollment.enrolled_image %}
+                                <img src="{{ emp.user.faceenrollment.enrolled_image.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                <div class="w-100 h-100 bg-secondary text-white d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-user text-muted" style="font-size: 1.1rem;"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                <h6 class="fw-bold text-light text-truncate mb-0" style="font-size: 0.95rem;">
+                                    {{ emp.user.get_full_name|default:emp.user.display_username }}
+                                </h6>
+                                <div>
+                                    {% if emp.current_attendance_status == 'PRESENT' %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-2" style="font-size: 0.65rem;">Present</span>
+                                    {% elif emp.current_attendance_status == 'LATE' %}
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle py-0.5 px-2" style="font-size: 0.65rem;">Late</span>
+                                    {% elif emp.current_attendance_status == 'ON_LEAVE' %}
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle py-0.5 px-2" style="font-size: 0.65rem;">Leave</span>
+                                    {% elif emp.current_attendance_status == 'WEEKEND' %}
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-0.5 px-2" style="font-size: 0.65rem;">Off Day</span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-0.5 px-2" style="font-size: 0.65rem;">Absent</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <small class="text-secondary opacity-75 d-block text-truncate" style="font-size: 0.78rem;">{{ emp.user.email }}</small>
+                        </div>
+                    </div>
+
+                    <!-- Info Grid -->
+                    <div class="border-top border-secondary pt-3 mb-3">
+                        <div class="row g-3 text-light" style="font-size: 0.85rem;">
+                            <div class="col-6">
+                                <span class="text-secondary d-block mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Employee ID</span>
+                                <strong class="font-monospace text-primary">{{ emp.display_employee_id }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-secondary d-block mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Department</span>
+                                <strong class="text-light text-truncate d-block">{{ emp.department.name|default:"Unassigned" }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-secondary d-block mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Designation</span>
+                                <strong class="text-light text-truncate d-block">{{ emp.designation }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-secondary d-block mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Joined</span>
+                                <strong class="text-light">{{ emp.date_of_joining|date:"M d, Y" }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reportees Collapse Section (for Managers) -->
+                    {% if emp.employee_type == 'MANAGER' %}
+                        <div class="border-top border-secondary pt-3 mb-3">
+                            <button class="btn btn-sm btn-outline-info w-100 d-flex align-items-center justify-content-center gap-1.5 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#reports-for-card-{{ emp.user.id }}" aria-expanded="false" aria-controls="reports-for-card-{{ emp.user.id }}">
+                                <i class="fas fa-chevron-down"></i>
+                                <span>View Reporting Staff</span>
+                            </button>
+                            <div class="collapse mt-2" id="reports-for-card-{{ emp.user.id }}">
+                                <div class="p-3 rounded border border-secondary" style="background: rgba(0, 0, 0, 0.25); font-size: 0.8rem;">
+                                    <h6 class="fw-bold text-primary mb-2.5" style="font-size: 0.8rem; letter-spacing: 0.5px;"><i class="fas fa-users me-1.5"></i>Reportees</h6>
+                                    {% if title_prefix == 'Active' %}
+                                        {% with reportees_list=emp.user.get_active_reportees %}
+                                            {% for reportee in reportees_list %}
+                                                <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom border-secondary-subtle{% endif %}">
+                                                    <div>
+                                                        <div class="fw-semibold text-light">{{ reportee.user.get_full_name|default:reportee.user.display_username }}</div>
+                                                        <small class="font-monospace text-secondary" style="font-size: 0.7rem;">{{ reportee.display_employee_id }}</small>
+                                                    </div>
+                                                    <span class="badge {% if reportee.current_attendance_status == 'PRESENT' %}bg-success-subtle text-success{% elif reportee.current_attendance_status == 'LATE' %}bg-warning-subtle text-warning{% elif reportee.current_attendance_status == 'ON_LEAVE' %}bg-info-subtle text-info{% else %}bg-danger-subtle text-danger{% endif %}" style="font-size: 0.6rem;">{{ reportee.current_attendance_status }}</span>
+                                                </div>
+                                            {% empty %}
+                                                <div class="text-center text-secondary py-2">No reporting staff found.</div>
+                                            {% endfor %}
+                                        {% endwith %}
+                                    {% else %}
+                                        {% with reportees_list=emp.user.get_inactive_reportees %}
+                                            {% for reportee in reportees_list %}
+                                                <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom border-secondary-subtle{% endif %}">
+                                                    <div>
+                                                        <div class="fw-semibold text-light">{{ reportee.user.get_full_name|default:reportee.user.display_username }}</div>
+                                                        <small class="font-monospace text-secondary" style="font-size: 0.7rem;">{{ reportee.display_employee_id }}</small>
+                                                    </div>
+                                                    <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.6rem;">Inactive</span>
+                                                </div>
+                                            {% empty %}
+                                                <div class="text-center text-secondary py-2">No reporting staff found.</div>
+                                            {% endfor %}
+                                        {% endwith %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Actions Footer -->
+                    <div class="border-top border-secondary pt-3 mt-auto d-flex gap-2 justify-content-end align-items-center flex-wrap">
+                        <a href="{% url 'employee_management:employee_details' emp.pk %}" class="btn btn-sm btn-glow-secondary py-1 px-3 d-inline-flex align-items-center gap-1.5">
+                            <i class="fas fa-eye"></i> Quick View
+                        </a>
+                        {% if request.user.role == 'ADMIN' %}
+                            <a href="{% url 'employee_management:edit_employee' emp.pk %}" class="btn btn-sm btn-outline-primary border-secondary py-1 px-2.5" title="Edit Profile">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form action="{% url 'employee_management:delete_employee' emp.pk %}" method="POST" class="d-inline-flex align-items-center m-0" onsubmit="return confirm('Are you sure you want to delete this employee?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger border-secondary py-1 px-2.5" title="Delete Employee">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5 text-secondary">
+        <i class="fas fa-users mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
+        <p class="mb-0">{{ empty_message|default:"No employees found in this directory." }}</p>
+    </div>
+{% endif %}

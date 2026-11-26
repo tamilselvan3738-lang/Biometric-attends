@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4 text-light">
+    <!-- Back Navigation -->
+    <div class="mb-3">
+        <a href="{% url 'tasks:manager_task_list' %}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fas fa-arrow-left"></i> Back to Task Management
+        </a>
+    </div>
+
+    <!-- Form Container -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="glass-card p-4 border border-secondary shadow-lg">
+                <h3 class="fw-bold mb-4 text-primary">{{ title }}</h3>
+                
+                <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label text-secondary fw-semibold">Task Title</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <div class="text-danger mt-1 small">{{ form.title.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label text-secondary fw-semibold">Detailed Description / Instructions</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="text-danger mt-1 small">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Grid Row: Priority & Dates -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label for="{{ form.priority.id_for_label }}" class="form-label text-secondary fw-semibold">Priority Level</label>
+                            {{ form.priority }}
+                            {% if form.priority.errors %}
+                            <div class="text-danger mt-1 small">{{ form.priority.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label text-secondary fw-semibold">Start Date</label>
+                            {{ form.start_date }}
+                            {% if form.start_date.errors %}
+                            <div class="text-danger mt-1 small">{{ form.start_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.due_date.id_for_label }}" class="form-label text-secondary fw-semibold">Due Date</label>
+                            {{ form.due_date }}
+                            {% if form.due_date.errors %}
+                            <div class="text-danger mt-1 small">{{ form.due_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Assign Employees (Checkbox list, only if creation form) -->
+                    {% if form.assigned_employees %}
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-semibold d-block">Assign To Reporting Employees</label>
+                        <div class="p-3 rounded border border-secondary bg-dark" style="max-height: 200px; overflow-y: auto;">
+                            {% if form.assigned_employees.field.queryset %}
+                                <div class="row g-2">
+                                    {% for choice in form.assigned_employees %}
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ choice.tag }}
+                                            <label class="form-check-label text-light small" for="{{ choice.id_for_label }}">
+                                                {{ choice.choice_label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-secondary small mb-0 py-2 text-center">
+                                    No reporting employees available to assign. Please ensure you have direct reports registered under your manager account.
+                                </p>
+                            {% endif %}
+                        </div>
+                        {% if form.assigned_employees.errors %}
+                        <div class="text-danger mt-1 small">{{ form.assigned_employees.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Attachments -->
+                    <div class="mb-4">
+                        <label for="{{ form.files.id_for_label }}" class="form-label text-secondary fw-semibold">{{ form.files.label }}</label>
+                        {{ form.files }}
+                        {% if form.files.errors %}
+                        <div class="text-danger mt-1 small">{{ form.files.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted d-block mt-1">You can upload multiple files at once.</small>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'tasks:manager_task_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-1"></i> Save Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .glass-card {
+        background: rgba(30, 41, 59, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 12px;
+    }
+</style>
+{% endblock %}

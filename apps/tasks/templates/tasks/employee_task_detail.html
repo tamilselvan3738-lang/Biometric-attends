@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4 text-light">
+    <!-- Back Navigation -->
+    <div class="mb-3">
+        <a href="{% url 'tasks:employee_task_list' %}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fas fa-arrow-left"></i> Back to My Tasks
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Task Specs & Update Panel -->
+        <div class="col-lg-8">
+            <!-- Task Info -->
+            <div class="glass-card p-4 border border-secondary mb-4">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <h3 class="fw-bold mb-1 text-primary">{{ task.title }}</h3>
+                        <p class="text-secondary mb-0">Assigned by Manager: <strong>{{ task.created_by.get_full_name|default:task.created_by.username }}</strong></p>
+                    </div>
+                    <div>
+                        {% if task.priority == 'CRITICAL' %}
+                        <span class="badge bg-danger px-3 py-1.5">Critical Priority</span>
+                        {% elif task.priority == 'HIGH' %}
+                        <span class="badge bg-warning text-dark px-3 py-1.5">High Priority</span>
+                        {% elif task.priority == 'MEDIUM' %}
+                        <span class="badge bg-primary px-3 py-1.5">Medium Priority</span>
+                        {% else %}
+                        <span class="badge bg-secondary px-3 py-1.5">Low Priority</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="border-secondary">
+
+                <div class="mb-4">
+                    <h6 class="text-primary fw-bold mb-2">Detailed Instructions</h6>
+                    <div class="p-3 bg-dark rounded border border-secondary text-light" style="white-space: pre-wrap; font-size: 0.92rem; line-height: 1.5;">{{ task.description }}</div>
+                </div>
+
+                <!-- Timings grid -->
+                <div class="row g-3 text-secondary font-monospace small">
+                    <div class="col-sm-6">
+                        <i class="far fa-calendar-alt text-primary me-2"></i>Start Date: <strong class="text-light">{{ task.start_date }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <i class="far fa-clock text-danger me-2"></i>Due Date: <strong class="text-light">{{ task.due_date }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update Status & Submit Panel -->
+            <div class="glass-card p-4 border border-secondary">
+                <h5 class="fw-bold mb-3 text-primary">Update Status & Progress</h5>
+                
+                {% if assignment.status == 'APPROVED' %}
+                <div class="alert alert-success border-success bg-success-dark d-flex align-items-center gap-3 py-3 rounded mb-0">
+                    <i class="fas fa-check-circle fs-3 text-success"></i>
+                    <div>
+                        <strong class="d-block text-light">Completion Accepted!</strong>
+                        <span class="text-secondary small">Your manager has approved this task. No further updates are required.</span>
+                    </div>
+                </div>
+                {% else %}
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="status_submit" value="1">
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.status.id_for_label }}" class="form-label text-secondary fw-semibold">Current Work Status</label>
+                            {{ form.status }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.attachment.id_for_label }}" class="form-label text-secondary fw-semibold">{{ form.attachment.label }}</label>
+                            {{ form.attachment }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.comment.id_for_label }}" class="form-label text-secondary fw-semibold">{{ form.comment.label }}</label>
+                        {{ form.comment }}
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-1.5"></i> Update Progress
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Column: Files and Chat -->
+        <div class="col-lg-4 d-flex flex-column gap-4">
+            <!-- Attachments -->
+            <div class="glass-card p-4 border border-secondary">
+                <h5 class="fw-bold mb-3 text-primary">Supporting Resources</h5>
+                <div class="d-flex flex-column gap-2" style="max-height: 250px; overflow-y: auto;">
+                    {% for file in attachments %}
+                    <div class="p-2 rounded bg-dark border border-secondary d-flex justify-content-between align-items-center">
+                        <div class="text-truncate" style="max-width: 200px;">
+                            <a href="{{ file.file.url }}" target="_blank" class="text-light text-decoration-none small d-block text-truncate fw-semibold">
+                                <i class="far fa-file-alt text-primary me-1.5"></i>{{ file.filename }}
+                            </a>
+                            <small class="text-secondary font-monospace" style="font-size: 0.7rem;">By {{ file.uploaded_by.username }}</small>
+                        </div>
+                        <a href="{{ file.file.url }}" download class="btn btn-sm btn-outline-secondary py-0.5 px-1.5" title="Download">
+                            <i class="fas fa-download" style="font-size: 0.8rem;"></i>
+                        </a>
+                    </div>
+                    {% empty %}
+                    <p class="text-secondary text-center py-3 m-0 small">No files uploaded yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Comments Thread -->
+            <div class="glass-card p-4 border border-secondary d-flex flex-column" style="min-height: 400px;">
+                <h5 class="fw-bold mb-3 text-primary">Comments & Updates</h5>
+                
+                <!-- Comments list -->
+                <div class="d-flex flex-column gap-3 mb-3 flex-grow-1" style="max-height: 350px; overflow-y: auto;">
+                    {% for comment in comments %}
+                    <div class="p-2.5 rounded {% if comment.author == request.user %}bg-primary-dark border-primary{% else %}bg-dark border-secondary{% endif %} border">
+                        <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
+                            <strong class="text-light">{{ comment.author.get_full_name|default:comment.author.username }}</strong>
+                            <span class="text-secondary font-monospace">{{ comment.created_at|date:"M d, H:i" }}</span>
+                        </div>
+                        <p class="text-light mb-0 small" style="line-height: 1.4; word-break: break-word;">{{ comment.content }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-secondary text-center py-4 my-auto small">No comments posted yet.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Add Comment Form -->
+                <form method="POST" class="mt-auto">
+                    {% csrf_token %}
+                    <input type="hidden" name="comment_submit" value="1">
+                    <div class="mb-2">
+                        {{ comment_form.content }}
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100">
+                        <i class="fas fa-paper-plane me-1"></i> Send Comment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .glass-card {
+        background: rgba(30, 41, 59, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 12px;
+    }
+    .bg-primary-dark {
+        background: rgba(59, 130, 246, 0.12);
+    }
+    .bg-success-dark {
+        background: rgba(16, 185, 129, 0.12);
+    }
+</style>
+{% endblock %}

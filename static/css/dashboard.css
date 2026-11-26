@@ -1,0 +1,114 @@
+.stat-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.25rem;
+}
+
+.stat-icon.primary { background: rgba(99, 102, 241, 0.15); color: var(--primary); }
+.stat-icon.secondary { background: rgba(20, 184, 166, 0.15); color: var(--secondary); }
+.stat-icon.success { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+.stat-icon.danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0.25rem 0;
+    color: var(--text-primary);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Quick Actions Grid */
+.quick-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: rgba(31, 41, 55, 0.3);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: var(--transition);
+    height: 100%;
+}
+
+.quick-action-btn:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-3px);
+}
+
+.quick-action-icon {
+    font-size: 1.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.quick-action-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Activity Feed */
+.activity-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.activity-item {
+    position: relative;
+    padding-left: 2rem;
+    padding-bottom: 1.5rem;
+    border-left: 2px solid var(--bg-tertiary);
+}
+
+.activity-item:last-child {
+    padding-bottom: 0;
+    border-left-color: transparent;
+}
+
+.activity-badge {
+    position: absolute;
+    left: -9px;
+    top: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border: 3px solid var(--bg-secondary);
+}
+
+.activity-badge.success { background: var(--success); }
+.activity-badge.danger { background: var(--danger); }
+.activity-badge.primary { background: var(--primary); }
+
+.activity-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.activity-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
